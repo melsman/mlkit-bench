@@ -1,0 +1,8 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  $(SML_LIB)/basis/real64_blocks.mlb
+  ForkJoin.sml
+  CommandLineArgs.sml
+in
+  ray2.sml
+end

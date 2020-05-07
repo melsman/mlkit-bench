@@ -1,0 +1,7 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ForkJoin.sml
+  CommandLineArgs.sml
+in
+  ray.sml
+end

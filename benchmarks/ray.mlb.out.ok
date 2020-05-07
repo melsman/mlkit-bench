@@ -1,0 +1,4 @@
+Using scene 'rgbbox' (-s to switch).
+Scene BVH construction in 0.0012s.
+Rendering in 0.5568s.
+-f not passed, so not writing image to file.

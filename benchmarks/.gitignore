@@ -1,0 +1,7 @@
+MLB
+report*.json
+*.out
+*.exe.out
+*.exe.out.*
+*.exe
+*~
