@@ -431,13 +431,19 @@ val _ = print ("Using scene '" ^ scene_name ^ "' (-s to switch).\n")
 val t0 = Time.now ()
 val (objs, cam) = from_scene width height scene
 val t1 = Time.now ()
-val _ = print ("Scene BVH construction in " ^ Time.fmt 4 (Time.- (t1, t0)) ^ "s.\n")
+
+val timing = false
+val () = if timing
+         then print ("Scene BVH construction in " ^ Time.fmt 4 (Time.- (t1, t0)) ^ "s.\n")
+         else print "Scene BVH construction done.\n"
 
 val t0 = Time.now ()
 val result = render objs width height cam
 val t1 = Time.now ()
 
-val _ = print ("Rendering in " ^ Time.fmt 4 (Time.- (t1, t0)) ^ "s.\n")
+val () = if timing
+         then print ("Rendering in " ^ Time.fmt 4 (Time.- (t1, t0)) ^ "s.\n")
+         else print "Rendering done.\n"
 
 val writeImage = if dop6 then image2ppm6 else image2ppm
 in

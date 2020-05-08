@@ -15,6 +15,7 @@ report.json:
 .PHONY: clean
 clean:
 	rm -rf MLB *~ *.exe.out.* *.exe time.out report.json
+	rm -rf raybench/MLB raybench/*~
 
 .PHONY: version
 version:

@@ -258,6 +258,7 @@ fun main (progname, args) =
 	 | SOME (inputs, cs, out) =>
 	   let val ps = sourceFiles inputs
 	       val ts = List.concat (map (process_progs ps) cs)
+               val errs = List.length(List.filter (fn t => #err t <> "") ts)
 	       fun withFile NONE f = f TextIO.stdOut
 		 | withFile (SOME s) f =
 		   let val os = TextIO.openOut s
@@ -266,9 +267,11 @@ fun main (progname, args) =
 		       ; print ("Wrote file ``" ^ s ^ "''\n"))
 		      handle ? => (TextIO.closeOut os; raise ?)
 		   end
-	   in
-	     withFile out (fn os => TextIO.output(os, Json.toString (toJson ts)))
-	   ; OS.Process.success
+               val () = if errs = 0 then
+                          print "Success: there were no errors.\n"
+                        else print ("*** WARNING: there were " ^ Int.toString errs ^ " error.\n")
+	   in withFile out (fn os => TextIO.output(os, Json.toString (toJson ts)))
+	    ; OS.Process.success
 	   end
     end
 end
