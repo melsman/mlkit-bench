@@ -12,7 +12,7 @@ structure Main =
 	      output = fn {n2bcalc:int, nbccalc:int, nstep:int, selfint:int, tnow:real} =>
 		 print ("{n2bcalc:" ^ Int.toString n2bcalc ^ ", nbccalc:" ^ Int.toString nbccalc ^
 			", nstep:" ^ Int.toString nstep ^ ", selfint:" ^ Int.toString selfint ^ ", tnow:" ^
-			Real.toString tnow ^ "}\n"),
+			Real.fmt (StringCvt.FIX(SOME 3)) tnow ^ "}\n"),
 	      bodies = M3.testdata 128,
 	      tnow = 0.0, tstop = 2.0,
 	      dtime = 0.025, eps = 0.05, tol = 1.0,

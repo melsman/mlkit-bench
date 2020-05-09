@@ -11,4 +11,4 @@ structure Main =
 fun loop n f = if n <= 0 then ()
                else (f(); loop (n-1) f)
 
-val _ = loop 10 Main.doit
+val _ = loop 20 Main.doit
