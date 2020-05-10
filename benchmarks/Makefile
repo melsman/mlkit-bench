@@ -4,10 +4,12 @@ MLKIT_BENCH=../src/mlkit-bench
 
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\(v[0-9\.a-z-]*\).*/\1/p')
 TODAY=$(shell date "+%Y-%m-%d")
+MACHINE_TAG ?= MacBookPro2016
+
 
 .PHONY: all
 all: report.json
-	cp $< report-$(TODAY)-$(MLKIT_VERSION).json
+	cp $< report_$(MLKIT_VERSION)_$(MACHINE_TAG)_$(TODAY).json
 
 report.json:
 	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -o $@ -mlkit -mlkit:-no_gc: -mlton $(BENCHFILES)
