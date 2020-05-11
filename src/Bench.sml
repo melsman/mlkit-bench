@@ -162,12 +162,32 @@ fun getMachine () =
 val today = Date.fromTimeLocal(Time.now())
 val machine = getMachine()
 
+fun sourcesMlb mlbfile =
+    let val s = FileUtil.readFile mlbfile
+        val ts = String.tokens Char.isSpace s
+        (* eliminate tokens with $ in them *)
+        val ts = List.filter (not o (CharVector.exists (fn c => c = #"$"))) ts
+        (* include only files with sml/sig/mlb-extensions *)
+        val ts = List.filter (fn t =>
+                                 case OS.Path.ext t of
+                                     SOME e => e = "sml" orelse e = "sig" orelse e = "mlb"
+                                   | NONE => false) ts
+    in ts
+    end
+
 fun linesOfFile f =
     case OS.Path.ext f of
-        SOME "sml" =>
-        (length (String.fields (fn c => c = #"\n") (FileUtil.readFile f))
-         handle _ => 0)
-      | SOME "mlb" => 0
+        SOME ext =>
+        if ext = "sig" orelse ext = "sml" then
+          (length (String.fields (fn c => c = #"\n") (FileUtil.readFile f))
+           handle _ => 0)
+        else if ext = "mlb" then
+          let val fs = sourcesMlb f
+              val dir = OS.Path.dir f
+              val fs = map (fn f => OS.Path.concat (dir,f)) fs
+          in foldl (op +) 0 (map linesOfFile fs)
+          end
+        else 0
       | _ => 0
 
 fun process_progs ps c : line list =
