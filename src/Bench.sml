@@ -41,7 +41,7 @@ fun process (compile: string -> string option * Time.time) (p:string)
         (SOME t,ctime) =>
 	let val out = t ^ ".out.1"  (* memo: we could check every invocation *)
             val cmd = "./" ^ t
-	    val res = (out, ctime,
+	    val res = (t, ctime,
                        exec_n 10 {out_file=fn i => t ^ ".out." ^ Int.toString i,
                                   cmd=cmd})
 	              handle _ => raise Fail ("Failure executing command " ^ cmd)
