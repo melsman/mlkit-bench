@@ -2,7 +2,7 @@ MLKIT_ROOT ?= ~/gits/mlkit
 BENCHFILES=badlife.sml barnes-hut.mlb DLX.sml fft.sml fib37.sml kbc.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml msort-rf.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml tsp_tp.sml zebra.sml zern.sml
 MLKIT_BENCH=../src/mlkit-bench
 
-MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\(v[0-9\.a-z-]*\).*/\1/p')
+MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')
 TODAY=$(shell date "+%Y-%m-%d")
 MACHINE_TAG ?= MacBookPro2016
 
