@@ -16,7 +16,7 @@ report.json:
 
 .PHONY: clean
 clean:
-	rm -rf MLB *~ *.exe.out.* *.exe time.out report.json
+	rm -rf MLB *~ *.exe.out.* *.exe time.out report.json *.auto.mlb
 	rm -rf raybench/MLB raybench/*~ nucleic/MLB nucleic/*~
 	rm -rf mlyacc/MLB mlyacc/*~ logic/MLB logic/*~ barnes-hut/MLB barnes-hut/*~
 
