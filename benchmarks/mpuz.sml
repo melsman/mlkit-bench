@@ -6,39 +6,21 @@
  * comp.lang.ml by Laurent Vaucher <blo.b@infonie.fr>.
  *)
 
+local
+
 structure List =
    struct
       open List
-
-      fun exists(l, p) = List.exists p l
-
-      fun map(l, f) = List.map f l
-
-      fun fold(l, b, f) =
-	 let
-	    fun loop(l, b) =
-	       case l of
-		  [] => b
-		| x :: l => loop(l, f(x, b))
-	 in loop(l, b)
-	 end
-
-      fun foreach(l, f) = fold(l, (), fn (x, ()) => f x)
+      fun exists (l, p) = List.exists p l
+      fun map (l, f) = List.map f l
+      fun fold (l, b, f) = List.foldl f b l
+      fun foreach (l, f) = List.app f l
    end
 
 structure String =
    struct
       open String
-
-      fun fold(s, b, f) =
-	 let
-	    val n = size s
-	    fun loop(i, b) =
-	       if i = n
-		  then b
-	       else loop(i + 1, f(String.sub(s, i), b))
-	 in loop(0, b)
-	 end
+      fun fold (s, b, f) = CharVector.foldl f b s
    end
 
 structure Mpuz =
@@ -136,4 +118,6 @@ structure Main =
 	 end
    end
 
+in
 val _ = Main.doit()
+end
