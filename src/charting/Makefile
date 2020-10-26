@@ -34,7 +34,7 @@ clean: cleandeploy
 .PHONY: cleandeploy
 cleandeploy:
 	rm -rf $(DEPLOYDIR)/MLB $(DEPLOYDIR)/basis $(DEPLOYDIR)/favicon.ico $(DEPLOYDIR)/index.html
-	rm -rf $(DEPLOYDIR)/isodate $(DEPLOYDIR)/lib $(DEPLOYDIR)/listutil $(DEPLOYDIR)/prims.js
+	rm -rf $(DEPLOYDIR)/isodate $(DEPLOYDIR)/lib $(DEPLOYDIR)/listutil $(DEPLOYDIR)/prims.js $(DEPLOYDIR)/custom.css
 
 .PHONY: deploy
 deploy: cleandeploy index.html
