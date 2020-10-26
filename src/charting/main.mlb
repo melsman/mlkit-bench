@@ -1,0 +1,15 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  $(SML_LIB)/basis/js.mlb
+  isodate/isodate.mlb
+  listutil/listutil.mlb
+  jsutil.mlb
+  lib/github.com/diku-dk/sml-setmap/string_map.mlb
+  lib/github.com/diku-dk/sml-sort/listsort.mlb
+  lib/github.com/diku-dk/sml-json/json.mlb
+  Data.sml
+
+  highchart.mlb
+in
+  main.sml
+end

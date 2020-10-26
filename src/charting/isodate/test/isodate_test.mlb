@@ -1,0 +1,8 @@
+(* Copyright 2015, Martin Elsman, MIT-license *)
+
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../isodate.mlb
+in
+  isodate_test.sml
+end

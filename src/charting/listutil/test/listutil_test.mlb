@@ -1,0 +1,11 @@
+(* Copyright 2017, Philip Munksgaard, MIT-license *)
+
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../kitlib/kitlib.mlb
+  ../misc.sml
+  ../listutil.sig
+  ../listutil.sml
+in
+  listutil_test.sml
+end

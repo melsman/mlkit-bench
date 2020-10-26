@@ -1,0 +1,81 @@
+filtermap1: [2,4,6,8,10]
+filtermap2: []
+filtermap3: []
+
+findKey1: SOME(10)
+findKey2: NONE
+findKey3: NONE
+
+appi: 0:0
+appi: 1:1
+appi: 2:2
+appi: 3:3
+appi: 4:4
+appi: 5:5
+appi: 6:6
+appi: 7:7
+appi: 8:8
+appi: 9:9
+
+mapi1: [0,2,4,6,8,10,12,14,16,18]
+mapi2: []
+
+map1: [1,2,3,4,5,6,7,8,9,10]
+map2: []
+
+mapPartial1: [0,2,4,6,8]
+mapPartial2: []
+
+contains1: true
+contains2: false
+contains3: false
+
+dedup1: [9,8,7,6,5,4,3,2,1,0]
+dedup2: [9,8,7,6,5,4,3,2,1,0]
+dedup3: []
+
+lookup1: 0
+lookup2: 1
+lookup3: Ok
+lookup4: Ok
+
+lookupOpt1: SOME(0)
+lookupOpt2: SOME(1)
+lookupOpt3: NONE
+lookupOpt4: NONE
+
+replace1: true
+replace2: true
+replace3: true
+
+chopN1: [0,1,2,3]
+chopN1: [4,5,6,7]
+chopN1: [8,9]
+
+cross1: [0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,10,2,3,4,5,6,7,8,9,10,11,3,4,5,6,7,8,9,10,11,12,4,5,6,7,8,9,10,11,12,13,5,6,7,8,9,10,11,12,13,14,6,7,8,9,10,11,12,13,14,15,7,8,9,10,11,12,13,14,15,16,8,9,10,11,12,13,14,15,16,17,9,10,11,12,13,14,15,16,17,18]
+cross2: [2]
+cross3: []
+
+mapPrev1: [1,3,5,7,9,11,13,15,17]
+mapPrev2: []
+mapPrev3: []
+
+dropWhile1: [1,2,3,4,5,6,7,8,9]
+dropWhile2: [0,1,2,3,4,5,6,7,8,9]
+dropWhile3: []
+
+takeWhile1: [0]
+takeWhile2: [0,2,4,6]
+takeWhile3: []
+takeWhile4: []
+
+splitAt1.1: [1,3,5]
+splitAt1.2: [6,7,8,9]
+splitAt2.1: []
+splitAt2.2: [0,1,3,5,6,7,8,9]
+splitAt3.1: []
+splitAt3.2: []
+
+groupBy' test 1: Ok
+
+groupBy test 1: Ok
