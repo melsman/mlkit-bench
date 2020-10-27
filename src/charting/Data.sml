@@ -2,36 +2,12 @@
 
 structure Data = struct
 
-(* similar to definitions in mlkit_bench/Bench.sml *)
+open DataType  (* shared with mlkit-bench *)
 
 fun die s = raise Fail ("Data: " ^ s)
 
 type kb = int
 type time = Time.time
-
-type report = {  (* MemTime.report *)
-  rss   : int,
-  size  : int,
-  data  : int,
-  stk   : int,
-  exe   : int,
-  sys   : real,
-  user  : real,
-  real  : real
-}
-
-type line = {
-  cname    : string,           (* compiler name *)
-  cversion : string,           (* compiler version *)
-  date     : ISODate.t,        (* date of comp/run *)
-  mach     : string,           (* machine identifier (cpu, os, arch) *)
-  pname    : string,           (* program name *)
-  plen     : int,              (* program length (lines) *)
-  ctime    : real,             (* compile time *)
-  binsz    : kb,               (* size of binary executable *)
-  runs     : report list,      (* the runs *)
-  err      : string            (* err string ("": no errors) *)
-}
 
 local
 
@@ -54,7 +30,7 @@ local
 
   fun lookD obj x =
       let val s = lookS obj x
-      in isodateOfString s
+      in ISODate.toDate(isodateOfString s)
       end
 
   fun lookT obj x =
@@ -92,7 +68,7 @@ local
         | SOME _ => die ("value associated with " ^ x ^ " is not a string")
         | NONE => die ("no value associated with " ^ x)
 
-  fun toRun (OBJECT obj) : report =
+  fun toRun (OBJECT obj) : measurement =
       {rss  = lookI obj "rss",
        size = lookI obj "size",
        data = lookI obj "data",
@@ -123,104 +99,6 @@ in
 fun fromJsonString (s:string) : line list =
     Json.foldlArrayJson (fn (t,ls) => toLine t :: ls) nil s
 end
-
-
-(* https://api.github.com/repos/ *)
-structure X = Js.XMLHttpRequest
-
-fun getUrl url (f:string->unit) : unit =
-    let val r = X.new()
-    in X.openn r {method="GET", url=url, async=true}
-     ; X.onStateChange r (fn () =>
-                             case X.state r of
-                                 4 =>
-                                 (case X.response r of
-                                      SOME s => f s
-                                    | NONE => raise Fail ("no response from " ^ url))
-                              | _ => ())
-     ; X.send r NONE
-    end
-
-infix $> ?>
-fun (Json.OBJECT obj) ?> s =
-    (case Json.objLook obj s of
-         SOME t => t
-       | NONE => die ("?> couldn't find '" ^ s ^ "' in object"))
-  | _ ?> s = die "?> expects left argument to be an object"
-
-fun j $> s =
-    case j ?> s of
-        Json.STRING s => s
-      | _ => die ("$> expects string for '" ^ s ^ "' in object")
-
-fun getReports (f : string list -> unit) : unit =
-    getUrl "https://api.github.com/repos/melsman/mlkit-bench/contents/reports"
-           (fn c =>
-               let val l =
-                       Json.foldlArrayJson (fn (j,ls) => (j $> "download_url") :: ls) nil c
-               in f l
-               end)
-
-fun processLink x (f:line list -> unit) : unit =
-    getUrl x (fn s => f (fromJsonString s))
-
-fun processLinks links (f:(string*line list) list -> unit) : unit =
-    let fun loop xs f =
-            case xs of
-                nil => f nil
-              | x::xs =>
-                loop xs (fn ds =>
-                            processLink x (fn d => f ((x,d)::ds)))
-    in loop links f
-    end
-
-type git_tag_data = {tag: string,
-                     date : (string -> unit) -> unit}
-
-fun cache_cc (f : (string -> unit) -> unit) : (string -> unit) -> unit =
-    let val xr : string option ref = ref NONE
-    in fn g => case !xr of
-                   SOME x => g x
-                 | NONE => f (fn x => (xr := SOME x; g x))
-    end
-
-
-fun getTagDate url (f : string -> unit) : unit =
-    getUrl url (fn c =>
-                   let val j = Json.fromString c
-                       fun findDate obj =
-                           case Json.objLook obj "date" of
-                               SOME (Json.STRING d) => d
-                             | _ => die "getTagDate.no date object"
-                       val d = case j of
-                                   Json.OBJECT obj =>
-                                   (case Json.objLook obj "author" of
-                                        SOME (Json.OBJECT obj) => findDate obj
-                                      | _ =>
-                                        (case Json.objLook obj "tagger" of
-                                             SOME (Json.OBJECT obj) => findDate obj
-                                           | _ => die "getTagDate.no tagger or author object"))
-                                 | _ => die "getTagDate.expecting object"
-                   in f d
-                   end)
-
-
-fun getMLKitTags (f : git_tag_data list -> unit) : unit =
-    getUrl "https://api.github.com/repos/melsman/mlkit/git/refs/tags"
-           (fn c =>
-               let val l =
-                       Json.foldlArrayJson
-                           (fn (j,ls) =>
-                               let val reference = j $> "ref"
-                                   val tag = case String.tokens (fn c => c = #"/") reference of
-                                                 ["refs","tags",tag] => tag
-                                               | _ => die "getMLKitTags.wrong format in ref"
-                                   val url  = j ?> "object" $> "url"
-                               in {tag=tag,
-                                   date=cache_cc(getTagDate url)} :: ls
-                               end) nil c
-               in f l
-               end)
 
 
 end

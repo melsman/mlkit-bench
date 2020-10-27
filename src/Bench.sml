@@ -11,7 +11,7 @@ fun pr_compiler (c:compiler): string =
     end
 
 
-type report = MemTime.report
+type measurement = MemTime.measurement
 
 fun files_equal (s1,s2) =
     let fun open_file s = TextIO.openIn s
@@ -21,7 +21,7 @@ fun files_equal (s1,s2) =
     in (TextIO.inputAll(is1) = TextIO.inputAll(is2) before (close()))
     end handle _ => false
 
-fun exec {cmd,out_file} : report =
+fun exec {cmd,out_file} : measurement =
     MemTime.memTime {cmd=cmd,args=nil,out_file=out_file, eout_file=NONE}
 
 fun exec_n n {out_file,cmd} =
@@ -36,7 +36,7 @@ fun exec_n n {out_file,cmd} =
     end
 
 fun process (compile: string -> string option * Time.time) (p:string)
-    : string * Time.time * report list =
+    : string * Time.time * measurement list =
     case compile p of
         (SOME t,ctime) =>
 	let val out = t ^ ".out.1"  (* memo: we could check every invocation *)
@@ -98,39 +98,25 @@ fun sourceFiles nil = nil
       | SOME "mlb" => input :: sourceFiles inputs
       | SOME ext => raise Fail ("Unknown extension " ^ ext)
 
-type kb = int
-type time = Time.time
-
-type line = {
-  cname:string,                 (* compiler name *)
-  cversion:string,              (* compiler version *)
-  date:Date.date,               (* date of comp/run *)
-  mach:string,                  (* machine identifier (cpu, os, arch) *)
-  pname:string,                 (* program name *)
-  plen:int,                     (* program length (lines) *)
-  ctime:time,                   (* compile time *)
-  binsz:kb,                     (* size of binary executable *)
-  runs:MemTime.report list,     (* the runs *)
-  err:string                    (* err string ("": no errors) *)
-}
+type line = DataType.line
 
 local open Json
+      val pr_r = Time.toString o Time.fromReal
 in
 
-fun runToJson {count:int, rss:int, size: int,
-	       data: int, stk: int, exe: int,
-	       sys: Time.time, user: Time.time, real: Time.time} : Json.obj =
+fun runToJson ({rss, size, data, stk, exe,
+	        sys, user, real} : measurement) : Json.obj =
     objFromList [("rss",NUMBER(Int.toString rss)),
                  ("size",NUMBER(Int.toString size)),
                  ("data",NUMBER(Int.toString data)),
                  ("stk",NUMBER(Int.toString stk)),
                  ("exe",NUMBER(Int.toString exe)),
-                 ("sys",NUMBER(Time.toString sys)),
-                 ("user",NUMBER(Time.toString user)),
-                 ("real",NUMBER(Time.toString real))]
+                 ("sys",NUMBER(pr_r sys)),
+                 ("user",NUMBER(pr_r user)),
+                 ("real",NUMBER(pr_r real))]
 
-fun lineToJson {cname,cversion,date,mach,pname,
-                plen,ctime,binsz,runs,err} : Json.obj =
+fun lineToJson ({cname,cversion,date,mach,pname,
+                 plen,ctime,binsz,runs,err}:line) : Json.obj =
     let val runs = map (OBJECT o runToJson) runs
     in objFromList [("cname",STRING cname),
                     ("cversion",STRING cversion),
@@ -138,7 +124,7 @@ fun lineToJson {cname,cversion,date,mach,pname,
                     ("mach", STRING mach),
                     ("pname", STRING pname),
                     ("plen", NUMBER (Int.toString plen)),
-                    ("ctime", NUMBER (Time.toString ctime)),
+                    ("ctime", NUMBER (pr_r ctime)),
                     ("binsz", NUMBER (Int.toString binsz)),
                     ("runs", ARRAY runs),
                     ("err", STRING err)]
@@ -204,7 +190,7 @@ fun process_progs ps c : line list =
                 mach=machine,
                 pname=p,
                 plen=linesOfFile p,
-                ctime=ctime,
+                ctime=Time.toReal ctime,
                 binsz=binsz,
                 runs=runs,
                 err=""} : line
@@ -216,7 +202,7 @@ fun process_progs ps c : line list =
                     mach=machine,
                     pname=p,
                     plen=linesOfFile p,
-                    ctime= Time.zeroTime,
+                    ctime= 0.0,
                     binsz= 0,
                     runs=nil,
                     err=msg} : line

@@ -550,12 +550,64 @@ val () = navbar body [{pg_title="Snapshot", pg_gen=fn () => SnapshotPage.elem},
                       {pg_title="About", pg_gen=fn () => AboutPage.elem}]
 
 
+local
+
+(* https://api.github.com/repos/ *)
+structure X = Js.XMLHttpRequest
+
+fun getUrl url (f:string->unit) : unit =
+    let val r = X.new()
+    in X.openn r {method="GET", url=url, async=true}
+     ; X.onStateChange r (fn () =>
+                             case X.state r of
+                                 4 =>
+                                 (case X.response r of
+                                      SOME s => f s
+                                    | NONE => raise Fail ("no response from " ^ url))
+                              | _ => ())
+     ; X.send r NONE
+    end
+
+infix $> ?>
+fun (Json.OBJECT obj) ?> s =
+    (case Json.objLook obj s of
+         SOME t => t
+       | NONE => die ("?> couldn't find '" ^ s ^ "' in object"))
+  | _ ?> s = die "?> expects left argument to be an object"
+
+fun j $> s =
+    case j ?> s of
+        Json.STRING s => s
+      | _ => die ("$> expects string for '" ^ s ^ "' in object")
+in
+fun getReports (f : string list -> unit) : unit =
+    getUrl "https://api.github.com/repos/melsman/mlkit-bench/contents/reports"
+           (fn c =>
+               let val l =
+                       Json.foldlArrayJson (fn (j,ls) => (j $> "download_url") :: ls) nil c
+               in f l
+               end)
+
+fun processLink x (f:Data.line list -> unit) : unit =
+    getUrl x (fn s => f (Data.fromJsonString s))
+
+fun processLinks links (f:(string*Data.line list) list -> unit) : unit =
+    let fun loop xs f =
+            case xs of
+                nil => f nil
+              | x::xs =>
+                loop xs (fn ds =>
+                            processLink x (fn d => f ((x,d)::ds)))
+    in loop links f
+    end
+end
+
 val () =
-    Data.getReports
+    getReports
         (fn links =>
             let val () = RawDataPage.addLinks links
-            in Data.processLinks links (fn dataset =>
-                                           ( SnapshotPage.setDataset dataset
-                                           ; datasetref := dataset)
-                                       )
+            in processLinks links (fn dataset =>
+                                      ( SnapshotPage.setDataset dataset
+                                      ; datasetref := dataset)
+                                  )
             end)

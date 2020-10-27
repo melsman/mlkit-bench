@@ -5,17 +5,10 @@ signature MEM_TIME =
      * Output from the command is redirected to out_file.
      * It is assumed that cmd does not write on stderr. *)
 
-    type report = {count:int, rss:int, size: int,
-		   data: int, stk: int, exe: int,
-		   sys: Time.time, user: Time.time, real: Time.time}
-    val pp_report : report -> string
-    val add_report : report * report -> report
-    val div_time : Time.time * int -> Time.time
-    val div_report : report * int -> report
-    val zero_report : report
-
-    val memTime: {cmd: string, args: string list,
-                  out_file: string, eout_file: string option} -> report
+    type measurement
+    val memTime : {cmd: string, args: string list,
+                   out_file: string, eout_file: string option} -> measurement
+    val pp      : measurement -> string
   end
 
 structure SysUtil = struct
@@ -40,36 +33,19 @@ fun system cmd : unit = system_v (fn () => false) cmd
 end
 
 
-structure MemTime : MEM_TIME =
+structure MemTime : MEM_TIME where type measurement = DataType.measurement =
   struct
 
-    type report0 = {count:int, rss:int, size: int,
-		    data: int, stk: int, exe: int}
-    type report = {count:int, rss:int, size: int,
-		   data: int, stk: int, exe: int,
-		   sys: Time.time, user: Time.time, real: Time.time}
+    type measurement = DataType.measurement
 
-    fun pp_report {count,rss,size,data,stk,exe,sys,user,real} =
-      "count: " ^ (Int.toString count) ^ "\nrss: " ^ (Int.toString rss) ^
-      "Kb.\nsize: " ^ (Int.toString size) ^ "Kb.\ndata: " ^ (Int.toString data) ^
-      "Kb.\nstk: " ^ (Int.toString stk) ^ "Kb.\nexe: " ^ (Int.toString exe) ^
-      "Kb.\nsys: " ^ (Time.toString sys) ^ "sec.\nuser: " ^ (Time.toString user) ^
-      "sec.\nreal: " ^ (Time.toString real) ^ "sec.\n"
-
-    fun add_report ({count, rss, size, data, stk, exe, sys, user, real} : report,
-                    {count=count', rss=rss', size=size', data=data', stk=stk', exe=exe', sys=sys', user=user', real=real'})
-        : report =
-          {count=count+count', rss=rss+rss', size=size+size',
-	   data=data+data', stk=stk+stk', exe=exe+exe',
-	   sys=Time.+(sys,sys'), user=Time.+(user,user),real=Time.+(real,real')}
-    fun div_time (t,n) = Time.fromReal(Time.toReal t / real n)
-    fun div_report ({count, rss, size, data, stk, exe, sys, user, real=r} : report, n:int)
-        : report =
-          {count=count div n, rss=rss div n, size=size div n,
-	   data=data div n, stk=stk div n, exe=exe div n,
-	   sys=div_time(sys,n), user=div_time(user,n),real=div_time(r,n)}
-    val zero_report = {count=0, rss=0, size=0, data=0, stk=0, exe=0,
-		       sys=Time.zeroTime, user=Time.zeroTime,real=Time.zeroTime}
+    fun pp {rss,size,data,stk,exe,sys,user,real} =
+        let val pr_r = Time.toString o Time.fromReal
+        in "rss: " ^ (Int.toString rss) ^
+           "Kb.\nsize: " ^ (Int.toString size) ^ "Kb.\ndata: " ^ (Int.toString data) ^
+           "Kb.\nstk: " ^ (Int.toString stk) ^ "Kb.\nexe: " ^ (Int.toString exe) ^
+           "Kb.\nsys: " ^ pr_r sys ^ "sec.\nuser: " ^ pr_r user ^
+           "sec.\nreal: " ^ pr_r real ^ "sec.\n"
+        end
 
     fun readAll f =
         let val is = TextIO.openIn f
@@ -115,7 +91,7 @@ sys          0.02
             end
           | NONE => raise Fail ("lookL: cannot find line with string '" ^ s ^ "'")
 
-    fun memTime_macos {cmd, args, out_file, eout_file} : report =
+    fun memTime_macos {cmd, args, out_file, eout_file} : measurement =
         let val timeout = case eout_file of
                               SOME f => f
                             | NONE => "time.out"
@@ -132,10 +108,10 @@ sys          0.02
             val data = 0
             val stk = 0
             val exe = 0
-            val sys = Time.fromReal (lookL lines "sys")
-            val real = Time.fromReal (lookL lines "real")
-            val user = Time.fromReal (lookL lines "user")
-        in {count=1,size=size,rss=rss,
+            val sys = lookL lines "sys"
+            val real = lookL lines "real"
+            val user = lookL lines "user"
+        in {size=size,rss=rss,
 	    data=data,stk=stk,exe=exe,
 	    sys=sys,
 	    user=user,
@@ -168,7 +144,7 @@ sys          0.02
 	Exit status: 0
 *)
 
-    fun memTime_linux {cmd, args, out_file, eout_file} : report = raise Fail "memTime_linux not implemented"
+    fun memTime_linux {cmd, args, out_file, eout_file} : measurement = raise Fail "memTime_linux not implemented"
 
     val memTime = if true then memTime_macos
                   else memTime_linux

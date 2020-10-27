@@ -7,8 +7,8 @@ local
   lib/github.com/diku-dk/sml-setmap/string_map.mlb
   lib/github.com/diku-dk/sml-sort/listsort.mlb
   lib/github.com/diku-dk/sml-json/json.mlb
+  datatype.mlb
   Data.sml
-
   highchart.mlb
 in
   main.sml
