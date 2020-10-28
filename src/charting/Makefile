@@ -25,6 +25,10 @@ highchart: highchart.mlb
 
 DEPLOYDIR=dist
 
+.PHONY: realclean
+realclean: clean
+	rm -rf lib
+
 .PHONY: clean
 clean: cleandeploy
 	rm -rf MLB *~ index.html page.html prims.js basis static/*~

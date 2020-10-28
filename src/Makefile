@@ -9,3 +9,4 @@ mlkit-bench: Bench.mlb Makefile *.sml
 .PHONY: clean
 clean:
 	rm -rf MLB *~ mlkit-bench
+	$(MAKE) -C press clean

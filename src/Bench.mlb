@@ -4,7 +4,7 @@ local
   charting/datatype.mlb   (* shared types with charting web-app *)
   MemTime.sml
   COMPILE.sml
-  FileUtil.sml
+  fileutil.mlb
   CompileMLKIT.sml
   CompileMLTON.sml
 in
