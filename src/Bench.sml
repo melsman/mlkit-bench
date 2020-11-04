@@ -275,7 +275,9 @@ fun main (progname, args) =
 		   end
                val () = if errs = 0 then
                           print "Success: there were no errors.\n"
-                        else print ("*** WARNING: there were " ^ Int.toString errs ^ " error.\n")
+                        else print ("*** WARNING: there " ^
+                                    (if errs = 1 then "was one error.\n"
+                                     else "were " ^ Int.toString errs ^ " errors.\n"))
 	   in withFile out (fn os => TextIO.output(os, Json.toString (toJson ts)))
 	    ; OS.Process.success
 	   end

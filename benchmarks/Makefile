@@ -1,5 +1,6 @@
 MLKIT_ROOT ?= ~/gits/mlkit
-BENCHFILES=badlife.sml barnes-hut.mlb DLX.sml fft.sml fib37.sml kbc.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml msort-rf.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml tsp_tp.sml zebra.sml zern.sml
+BENCHFILES=vliw.sml lexgen.sml badlife.sml barnes-hut.mlb DLX.sml fft.sml fib37.sml kbc.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml msort-rf.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml tsp_tp.sml zebra.sml zern.sml
+#BENCHFILES=vliw.sml lexgen.sml
 MLKIT_BENCH=../src/mlkit-bench
 
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')
@@ -12,7 +13,7 @@ all: report.json
 	cp $< report_$(MLKIT_VERSION)_$(MACHINE_TAG)_$(TODAY).json
 
 report.json:
-	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -o $@ -mlkit -mlkit:-no_gc: -mlton $(BENCHFILES)
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -o $@ -mlkit:-no_ri: -mlkit -mlkit:-gengc: -mlkit:-no_ri -gengc: -mlkit:-no_gc: -mlton $(BENCHFILES)
 
 .PHONY: clean
 clean:
