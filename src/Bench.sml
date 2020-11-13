@@ -21,19 +21,27 @@ fun files_equal (s1,s2) =
     in (TextIO.inputAll(is1) = TextIO.inputAll(is2) before (close()))
     end handle _ => false
 
-fun exec {cmd,out_file} : measurement =
-    MemTime.memTime {cmd=cmd,args=nil,out_file=out_file, eout_file=NONE}
+fun exec {cmd,args,out_file} : measurement =
+    MemTime.memTime {cmd=cmd,args=args,out_file=out_file, eout_file=NONE}
 
 fun exec_n n {out_file,cmd} =
     let val L = List.tabulate (n,fn i => i+1)
-        val () = print ("Executing: " ^ cmd ^ " - ")
+        val args =
+            if String.isSubstring "mlkit" cmd andalso
+               not(String.isSubstring "-no_gc" cmd)
+            then ["-report_gc"]
+            else []
+        val () = print ("Executing: " ^ cmd ^ " " ^ String.concatWith " " args ^ " - ")
         val R = List.map (fn i =>
                              (print (Int.toString i ^ ":");
                               exec {cmd=cmd,
+                                    args=args,
                                     out_file=out_file i})) L
         val () = print "\n"
     in R
     end
+
+val repetitions = ref 10
 
 fun process (compile: string -> string option * Time.time) (p:string)
     : string * Time.time * measurement list =
@@ -42,8 +50,9 @@ fun process (compile: string -> string option * Time.time) (p:string)
 	let val out = t ^ ".out.1"  (* memo: we could check every invocation *)
             val cmd = "./" ^ t
 	    val res = (t, ctime,
-                       exec_n 10 {out_file=fn i => t ^ ".out." ^ Int.toString i,
-                                  cmd=cmd})
+                       exec_n (!repetitions)
+                              {out_file=fn i => t ^ ".out." ^ Int.toString i,
+                               cmd=cmd})
 	              handle _ => raise Fail ("Failure executing command " ^ cmd)
         in if files_equal(p ^ ".out.ok", out) then res
            else raise Fail ("File " ^ p ^ ".out.ok does not match " ^ out)
@@ -79,6 +88,16 @@ fun getCompileArgs (nil, comps, out) = NONE
 	(case ss of
              f::ss => getCompileArgs (ss, comps, SOME f)
 	   | _ => NONE)
+      | "-n" =>
+        (case ss of
+             s::ss =>
+             (case Int.fromString s of
+                  SOME n =>
+                  if n > 0 then ( repetitions := n
+                                ; getCompileArgs (ss, comps, out))
+                  else NONE
+                | NONE => NONE)
+             | _ => NONE)
       | _ => SOME (s::ss, rev comps, out)
 
 fun getNameComp c =
@@ -105,7 +124,8 @@ local open Json
 in
 
 fun runToJson ({rss, size, data, stk, exe,
-	        sys, user, real} : measurement) : Json.obj =
+	        sys, user, real,
+                gc, gcn, majgc, majgcn} : measurement) : Json.obj =
     objFromList [("rss",NUMBER(Int.toString rss)),
                  ("size",NUMBER(Int.toString size)),
                  ("data",NUMBER(Int.toString data)),
@@ -113,7 +133,12 @@ fun runToJson ({rss, size, data, stk, exe,
                  ("exe",NUMBER(Int.toString exe)),
                  ("sys",NUMBER(pr_r sys)),
                  ("user",NUMBER(pr_r user)),
-                 ("real",NUMBER(pr_r real))]
+                 ("real",NUMBER(pr_r real)),
+                 ("gc",NUMBER(pr_r gc)),
+                 ("majgc",NUMBER(pr_r majgc)),
+                 ("gcn",NUMBER(Int.toString gcn)),
+                 ("majgcn",NUMBER(Int.toString majgcn))
+                ]
 
 fun lineToJson ({cname,cversion,date,mach,pname,
                  plen,ctime,binsz,runs,err}:line) : Json.obj =
@@ -241,7 +266,8 @@ fun main (progname, args) =
 	    ; print "OPTIONS:\n"
 	    ; print "  -mlton[:FLAG ... FLAG:]  Run MLTON on each test.\n"
 	    ; print "  -mlkit[:FLAG ... FLAG:]  Run MLKIT on each test.\n"
-	    ; print "  -o file                Write json output to `file`.\n"
+	    ; print "  -o file                  Write json output to `file`.\n"
+            ; print "  -n n                     Set number of repetitions to n.\n"
             ; print "FLAG options to -mlton and -mlkit are passed to\n"
 	    ; print "  the compiler.\n"
 	    ; print "FILES:\n"

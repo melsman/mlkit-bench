@@ -38,13 +38,17 @@ structure MemTime : MEM_TIME where type measurement = DataType.measurement =
 
     type measurement = DataType.measurement
 
-    fun pp {rss,size,data,stk,exe,sys,user,real} =
+    fun pp {rss,size,data,stk,exe,sys,user,real,gc,gcn,majgc,majgcn} =
         let val pr_r = Time.toString o Time.fromReal
         in "rss: " ^ (Int.toString rss) ^
            "Kb.\nsize: " ^ (Int.toString size) ^ "Kb.\ndata: " ^ (Int.toString data) ^
            "Kb.\nstk: " ^ (Int.toString stk) ^ "Kb.\nexe: " ^ (Int.toString exe) ^
            "Kb.\nsys: " ^ pr_r sys ^ "sec.\nuser: " ^ pr_r user ^
-           "sec.\nreal: " ^ pr_r real ^ "sec.\n"
+           "sec.\nreal: " ^ pr_r real ^
+           "sec.\ngc: " ^ pr_r gc ^
+           "sec.\ngcn: " ^ Int.toString gcn ^
+           ".\nmajgc: " ^ pr_r majgc ^
+           "sec.\nmajgcn: " ^ Int.toString majgcn ^ ".\n"
         end
 
     fun readAll f =
@@ -91,6 +95,28 @@ sys          0.02
             end
           | NONE => raise Fail ("lookL: cannot find line with string '" ^ s ^ "'")
 
+    fun gcinfo (lines:string list) : {gc:real,majgc:real,gcn:int,majgcn:int} option =
+        case List.find (String.isPrefix "[GC(") lines of
+            NONE => NONE
+          | SOME l =>
+            let val l = String.extract(l,4,NONE)
+                fun readTime s = if String.isSuffix "ms)" s then
+                                   Option.map (fn r => r / 1000.0) (Real.fromString s)
+                                 else NONE
+                fun process gc gcn majgc majgcn =
+                    case (readTime gc, Int.fromString gcn, readTime majgc, Int.fromString majgcn) of
+                        (SOME gct,SOME gcn, SOME majgct, SOME majgcn) => SOME {gc=gct,majgc=majgct,
+                                                                           gcn=gcn,majgcn=majgcn}
+                      | _ => NONE
+            in case String.tokens (fn c => c = #" " orelse c = #":"
+                                           orelse c = #"(" orelse c = #",") l of
+                   gc :: gcn :: "collections" :: majgcn :: "major" :: majgc :: _ =>
+                   process gc gcn majgc majgcn
+                |  gc :: gcn :: "collections" :: _ =>
+                   process gc gcn gc gcn
+                | _ => NONE
+            end
+
     fun memTime_macos {cmd, args, out_file, eout_file} : measurement =
         let val timeout = case eout_file of
                               SOME f => f
@@ -111,11 +137,16 @@ sys          0.02
             val sys = lookL lines "sys"
             val real = lookL lines "real"
             val user = lookL lines "user"
+            val {gc,gcn,majgc,majgcn} =
+                case gcinfo lines of
+                    SOME r => r
+                  | MONE => {gc=0.0,gcn=0,majgc=0.0,majgcn=0}
         in {size=size,rss=rss,
 	    data=data,stk=stk,exe=exe,
 	    sys=sys,
 	    user=user,
-	    real=real}
+	    real=real,
+            gc=gc,gcn=gcn,majgc=majgc,majgcn=majgcn}
         end
 
 (* linux format of '/usr/bin/time -v':

@@ -5,3 +5,4 @@ report*.json
 *.exe.out.*
 *.exe
 *~
+*.pct

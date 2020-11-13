@@ -6,6 +6,10 @@ type measurement = {
   data  : int,
   stk   : int,
   exe   : int,
+  gcn   : int,                 (* total gc count *)
+  majgcn: int,                 (* major gc count *)
+  gc    : real,                (* total gc time *)
+  majgc : real,                (* major gc time *)
   sys   : real,
   user  : real,
   real  : real

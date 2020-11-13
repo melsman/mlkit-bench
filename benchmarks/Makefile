@@ -13,13 +13,30 @@ all: report.json
 	cp $< report_$(MLKIT_VERSION)_$(MACHINE_TAG)_$(TODAY).json
 
 report.json:
-	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -o $@ -mlkit:-no_ri: -mlkit -mlkit:-gengc: -mlkit:-no_ri -gengc: -mlkit:-no_gc: -mlton $(BENCHFILES)
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -n 30 -o $@ -mlkit:-no_ri: -mlkit -mlkit:-gengc: -mlkit:-no_ri -gengc: -mlkit:-no_gc: -mlton $(BENCHFILES)
 
 .PHONY: clean
 clean:
 	rm -rf MLB *~ *.exe.out.* *.exe time.out report.json *.auto.mlb
 	rm -rf raybench/MLB raybench/*~ nucleic/MLB nucleic/*~
 	rm -rf mlyacc/MLB mlyacc/*~ logic/MLB logic/*~ barnes-hut/MLB barnes-hut/*~
+
+KEYS=DLX barnes-hut fft fib37 kbc lexgen life logic mandelbrot mlyacc mpuz msort-rf msort nucleic professor ratio ray simple tak tsp vliw zebra zern
+PCTFILES_rg=$(KEYS:%=%_rg.pct)
+PCTFILES_rGG=$(KEYS:%=%_rGG.pct)
+
+%_rg.pct: %_mlkit.exe
+	/bin/echo -n "$*: " > $@
+	./$< -verbose_gc 2>&1 | tail -n 1 | sed -e 's/.*RI:[ ]*\([0-9]*\)%, GC:[ ]*\([0-9]*\)%.*/\2/g' >> $@
+
+%_rGG.pct: %_mlkit-gengc.exe
+	/bin/echo -n "$*: " > $@
+	./$< -verbose_gc 2>&1 | tail -n 1 | sed -e 's/.*RI:[ ]*\([0-9]*\)%, GC:[ ]*\([0-9]*\)%.*/\2/g' >> $@
+
+.PHONY: pct
+pct: $(PCTFILES_rg) $(PCTFILES_rGG)
+	cat $(PCTFILES_rg)
+	cat $(PCTFILES_rGG)
 
 .PHONY: version
 version:

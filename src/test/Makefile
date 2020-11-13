@@ -8,7 +8,7 @@ all: test
 test: test.json
 
 test.json:
-	MLKIT_ROOT=$(MLKIT_ROOT) ../mlkit-bench -o $@ -mlkit -mlkit:-no_gc: -mlton $(TESTFILES)
+	MLKIT_ROOT=$(MLKIT_ROOT) ../mlkit-bench -o $@ -mlkit -mlkit:-no_gc: -mlkit:-gengc: -mlton $(TESTFILES)
 
 .PHONY: clean
 clean:

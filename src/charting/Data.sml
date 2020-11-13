@@ -42,22 +42,31 @@ local
         | SOME _ => die ("value associated with " ^ x ^ " is not a number")
         | NONE => die ("no value associated with " ^ x)
 
-  fun lookI obj x =
-      case objLook obj x of
-          SOME (NUMBER s) =>
-          let fun getInt s =
-                  case Int.fromString s of
-                      SOME i => i
-                    | NONE => die ("wrong type of value associated with " ^ x ^ " - found number " ^ s)
-          in case String.fields (fn c => c = #".") s of
-                 [s] => getInt s
-               | [a,b] => (case Int.fromString b of
-                               SOME 0 => getInt a
-                             | _ => die ("Number " ^ s ^ " associated with " ^ x ^ " is not an integer"))
-               | _ => die ("Wrong type of number value for " ^ x)
-          end
-        | SOME _ => die ("value associated with " ^ x ^ " is not a string")
-        | NONE => die ("no value associated with " ^ x)
+  local
+    fun lookInt x s =
+        let fun getInt s =
+                case Int.fromString s of
+                    SOME i => i
+                  | NONE => die ("wrong type of value associated with " ^ x ^ " - found number " ^ s)
+        in case String.fields (fn c => c = #".") s of
+               [s] => getInt s
+             | [a,b] => (case Int.fromString b of
+                             SOME 0 => getInt a
+                           | _ => die ("Number " ^ s ^ " associated with " ^ x ^ " is not an integer"))
+             | _ => die ("Wrong type of number value for " ^ x)
+        end
+  in
+    fun lookI obj x =
+        case objLook obj x of
+            SOME (NUMBER s) => lookInt x s
+          | SOME _ => die ("value associated with " ^ x ^ " is not a string")
+          | NONE => die ("no value associated with " ^ x)
+    fun lookI0 obj x =
+        case objLook obj x of
+            SOME (NUMBER s) => lookInt x s
+          | SOME _ => die ("value associated with " ^ x ^ " is not a string")
+          | NONE => 0
+  end
 
   fun lookR obj x =
       case objLook obj x of
@@ -68,15 +77,29 @@ local
         | SOME _ => die ("value associated with " ^ x ^ " is not a string")
         | NONE => die ("no value associated with " ^ x)
 
+  fun lookR0 obj x =
+      case objLook obj x of
+          SOME (NUMBER s) =>
+          (case Real.fromString s of
+               SOME r => r
+             | NONE => die ("wrong type of value associated with " ^ x ^ " - found number " ^ s))
+        | SOME _ => die ("value associated with " ^ x ^ " is not a string")
+        | NONE => 0.0
+
   fun toRun (OBJECT obj) : measurement =
-      {rss  = lookI obj "rss",
-       size = lookI obj "size",
-       data = lookI obj "data",
-       stk  = lookI obj "stk",
-       exe  = lookI obj "exe",
-       sys  = lookR obj "sys",
-       user = lookR obj "user",
-       real = lookR obj "real"}
+      {rss   = lookI obj "rss",
+       size  = lookI obj "size",
+       data  = lookI obj "data",
+       stk   = lookI obj "stk",
+       exe   = lookI obj "exe",
+       sys   = lookR obj "sys",
+       user  = lookR obj "user",
+       real  = lookR obj "real",
+       gc    = lookR0 obj "gc",
+       majgc = lookR0 obj "majgc",
+       gcn   = lookI0 obj "gcn",
+       majgcn= lookI0 obj "majgcn"
+      }
     | toRun _ = die "toRun expects an object"
 
   fun toLine (OBJECT obj) : line =

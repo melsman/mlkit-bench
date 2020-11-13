@@ -12,32 +12,51 @@ type flags = {data:string list,         (* name of measurement data entry *)
               cname:string list,        (* compiler name *)
               cversion:string list,     (* compiler version *)
               pname:string list,        (* program name *)
+              prune:string list,        (* program name to prune / eliminate *)
               columns:string list,      (* columns to include (all if empty) *)
+              bflags:string list,       (* enabled boolean flags *)
+(*
               skip1:bool,               (* skip first measurement *)
               rsd:bool,                 (* include separate rsd columns *)
               sd:bool,                  (* non-relative stddev *)
+              latex:bool,               (* latex output *)
+*)
               merge_rows:string option} (* merge rows with different provided column but same pname *)
 
-val flags0 : flags = {data=nil,cname=nil,cversion=nil,pname=nil,columns=nil,skip1=false,rsd=false,merge_rows=NONE,sd=false}
+val flags0 : flags = {data=nil,cname=nil,cversion=nil,pname=nil,prune=nil,columns=nil,bflags=nil,merge_rows=NONE}
 
-fun add_data ({data,cname,cversion,pname,columns,skip1,rsd,sd,merge_rows}:flags) (x:string) : flags =
-    {data=x::data,cname=cname,cversion=cversion,pname=pname,columns=columns,skip1=skip1,rsd=rsd,sd=sd,merge_rows=merge_rows}
-fun add_cname ({data,cname,cversion,pname,columns,skip1,rsd,sd,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=x::cname,cversion=cversion,pname=pname,columns=columns,skip1=skip1,rsd=rsd,sd=sd,merge_rows=merge_rows}
-fun add_cversion ({data,cname,cversion,pname,columns,skip1,rsd,sd,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=x::cversion,pname=pname,columns=columns,skip1=skip1,rsd=rsd,sd=sd,merge_rows=merge_rows}
-fun add_pname ({data,cname,cversion,pname,columns,skip1,rsd,sd,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=x::pname,columns=columns,skip1=skip1,rsd=rsd,sd=sd,merge_rows=merge_rows}
-fun add_column ({data,cname,cversion,pname,columns,skip1,rsd,sd,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,columns=x::columns,skip1=skip1,rsd=rsd,sd=sd,merge_rows=merge_rows}
-fun enable_skip1 ({data,cname,cversion,pname,columns,skip1,rsd,sd,merge_rows}:flags) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,columns=columns,skip1=true,rsd=rsd,sd=sd,merge_rows=merge_rows}
-fun enable_rsd ({data,cname,cversion,pname,columns,skip1,rsd,sd,merge_rows}:flags) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,columns=columns,skip1=skip1,rsd=true,sd=sd,merge_rows=merge_rows}
-fun enable_sd ({data,cname,cversion,pname,columns,skip1,rsd,sd,merge_rows}:flags) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,columns=columns,skip1=skip1,rsd=rsd,sd=true,merge_rows=merge_rows}
-fun add_merge_rows ({data,cname,cversion,pname,columns,skip1,rsd,sd,merge_rows}:flags) (x:string): flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,columns=columns,skip1=skip1,rsd=rsd,sd=sd,merge_rows=SOME x}
+fun add_data ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
+    {data=x::data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
+fun add_cname ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=x::cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
+fun add_cversion ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=cname,cversion=x::cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
+fun add_pname ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=cname,cversion=cversion,pname=x::pname,prune=prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
+fun add_prune ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=cname,cversion=cversion,pname=pname,prune=x::prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
+fun add_column ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=x::columns,bflags=bflags,merge_rows=merge_rows}
+
+local
+  fun enable_bflag f ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) : flags =
+      {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=f::bflags,merge_rows=merge_rows}
+  fun enabled_bflag f (fs:flags) : bool =
+      List.exists (fn s => f = s) (#bflags fs)
+  fun enable_enabled f : (flags -> flags) * (flags -> bool) =
+      (enable_bflag f, enabled_bflag f)
+in
+  val (enable_skip1, enabled_skip1) = enable_enabled "skip1"
+  val (enable_rsd, enabled_rsd) = enable_enabled "rsd"
+  val (enable_sd, enabled_sd) = enable_enabled "sd"
+  val (enable_M, enabled_M) = enable_enabled "M"
+  val (enable_N, enabled_N) = enable_enabled "N"
+  val (enable_latex, enabled_latex) = enable_enabled "latex"
+  val (enable_gnuplot, enabled_gnuplot) = enable_enabled "gnuplot"
+end
+
+fun add_merge_rows ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string): flags =
+    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,merge_rows=SOME x}
 
 fun sourceFiles nil = nil
   | sourceFiles (input::inputs) =
@@ -55,12 +74,19 @@ fun getCompileArgs (nil, flags:flags) = NONE
     in case s of
            "-cname" => cont add_cname ss
          | "-pname" => cont add_pname ss
+         | "-prune" => cont add_prune ss
          | "-cversion" => cont add_cversion ss
          | "-data" => cont add_data ss
+         | "-d" => cont add_data ss
          | "-column" => cont add_column ss
+         | "-c" => cont add_column ss
          | "-skip1" => getCompileArgs(ss,enable_skip1 flags)
          | "-rsd" => getCompileArgs(ss,enable_rsd flags)
          | "-sd" => getCompileArgs(ss,enable_sd flags)
+         | "-M" => getCompileArgs(ss,enable_M flags)
+         | "-N" => getCompileArgs(ss,enable_N flags)
+         | "-latex" => getCompileArgs(ss,enable_latex flags)
+         | "-gnuplot" => getCompileArgs(ss,enable_gnuplot flags)
          | "-merge_rows" => cont add_merge_rows ss
          | _ => SOME (sourceFiles(s::ss),flags)
     end
@@ -83,6 +109,8 @@ local fun getLines (json_str:string) : line list =
             andalso
             (List.null (#pname flags) orelse
              List.exists (fn x => x = #pname l) (#pname flags))
+            andalso
+            (not(List.exists (fn x => x = #pname l) (#prune flags)))
           then SOME l
           else NONE
 
@@ -96,7 +124,11 @@ local fun getLines (json_str:string) : line list =
             | "sys" => #sys m
             | "user" => #user m
             | "real" => #real m
-            | _ => die ("Expecting data specifier to be one of rss, size, data, stk, exe, sys, user, or real - got '" ^ d ^ "'")
+            | "gc" => #gc m
+            | "majgc" => #majgc m
+            | "gcn" => real(#gcn m)
+            | "majgcn" => real(#majgcn m)
+            | _ => die ("Expecting data specifier to be one of rss, size, data, stk, exe, sys, user, real, gc, gcn, majgc, or majgcn - got '" ^ d ^ "'")
 
       fun sq s : real = s * s
       fun wrap s e = s ^ e ^ s
@@ -166,33 +198,52 @@ local fun getLines (json_str:string) : line list =
              else {avg=avg,rsd=100.0*sd/avg}
           end
 
+      fun pp_tt flags s =
+          if enabled_gnuplot flags then
+            "\"" ^ s ^ "\""
+          else if enabled_latex flags then "\\mbox{\\tt " ^ s ^ "}"
+          else s
+
+      fun pp_pname flags s =
+          if enabled_latex flags orelse enabled_gnuplot flags then
+            case String.tokens (fn c => c = #".") s of
+                [f,"sml"] => pp_tt flags f
+              | [f,"mlb"] => pp_tt flags f
+              | _ => s
+          else s
+
       fun process (flags:flags) (line:line) : (string*string) list =
           let val runs = #runs line
-              val runs = if #skip1 flags then
+              val runs = if enabled_skip1 flags then
                            (case runs of _ :: rs => rs | _ => runs)
                          else runs
-              fun memory d = List.exists (fn x => x=d) ["rss","size","data","stk","exe"]
-              fun pp d v = if memory d then
-                             if v >= 100000.0 then real_to_string 0 (v / 1000.0) ^ "M"
+              fun is_memory d = List.exists (fn x => x=d) ["rss","size","data","stk","exe"]
+              fun is_count d = List.exists (fn x => x=d) ["gcn","majgcn"]
+              fun pp d v = if is_memory d then
+                             if enabled_M flags then
+                               real_to_string 1 (v / 1000.0)
+                             else if v >= 100000.0 then real_to_string 0 (v / 1000.0) ^ "M"
                              else if v >= 999.0 then real_to_string 1 (v / 1000.0) ^ "M"
                              else real_to_string 0 v ^ "K"
+                           else if is_count d andalso enabled_N flags then
+                             real_to_string 0 v
                            else real_to_string 2 v
               val data = rev(#data flags)
-              val cols0 = [("cname",#cname line), ("cversion",#cversion line), ("pname",#pname line)]
+              val cols0 = [("cname",#cname line), ("cversion",#cversion line), ("pname",pp_pname flags(#pname line))]
               val cols1 = List.map (fn d =>
                                        let val rs = List.map (select d) runs
                                        in case rs of
                                               nil => die (#pname line ^ " " ^ d ^ ": No measurements")
                                             | _ =>
                                               let val (avg,rsd,pct,h,i) =
-                                                      if #sd flags
+                                                      if enabled_sd flags
                                                       then let val {avg,sd} = average_sd rs
                                                            in (avg,sd,"","sd",4)
                                                            end
                                                       else let val {avg,rsd} = average_rsd rs
                                                            in (avg,rsd,"%","rsd",1)
                                                            end
-                                              in if #rsd flags then
+                                              in if enabled_rsd flags then
                                                    [(d,pp d avg),(d ^ " " ^ h, real_to_string i rsd)]
                                                  else [(d,pp d avg ^ " ±" ^ real_to_string i rsd ^ pct)]
                                               end
@@ -248,7 +299,14 @@ local fun getLines (json_str:string) : line list =
       fun mergeRows col (table: table) : table =
           groupToCols "pname" (fn r =>
                                   case find col r of
-                                      SOME cn => expands r cn ["user","user rsd","rss","rss rsd"]
+                                      SOME cn => expands r cn ["user","user rsd","user sd",
+                                                               "real","real rsd","real sd",
+                                                               "gc","gc rsd","gc sd",
+                                                               "majgc","majgc rsd","majgc sd",
+                                                               "gcn",
+                                                               "majgcn",
+                                                               "rss","rss rsd","rss sd"
+                                                              ]
                                     | NONE => nil) table
 
       fun processAll flags (lines: line list) : unit =
@@ -263,7 +321,13 @@ local fun getLines (json_str:string) : line list =
                                 end
                     | _ => table
               val table = pads flags table
-              val rows = List.map (wrap " | " o String.concatWith " | " o List.map #2) table
+              val (wr, sep) =
+                  if enabled_latex flags then
+                    (fn s => s ^ " \\\\ ", " & ")
+                  else if enabled_gnuplot flags then
+                    (fn s => s, "   ")
+                  else (wrap " | ", " | ")
+              val rows = List.map (wr o String.concatWith sep o List.map #2) table
           in List.app println rows
           end
 in
@@ -279,15 +343,19 @@ fun main (progname, args) =
            NONE =>
 	   (  print "USAGE: mlkit-bench-press [OPTION]... FILE...\n"
 	    ; print "OPTIONS:\n"
-	    ; print "  -pname s      : Filter pname s.\n"
-	    ; print "  -cname s      : Filter cname s.\n"
-	    ; print "  -cversion s   : Filter cversion s.\n"
-	    ; print "  -data s       : s in {data,exe,real,rss,size,stk,sys,user}.\n"
-            ; print "  -column c     : Include column c.\n"
-            ; print "  -skip1        : Skip the first measument.\n"
-            ; print "  -rsd          : Separate columns for relative stddev.\n"
-            ; print "  -sd           : Report non-relative stddev.\n"
-            ; print "  -merge_rows c : Merge rows with same pname and different c's.\n"
+	    ; print "  -pname s        : Include pname s.\n"
+	    ; print "  -prune s        : Exclude pname s.\n"
+	    ; print "  -cname s        : Filter cname s.\n"
+	    ; print "  -cversion s     : Filter cversion s.\n"
+	    ; print "  -data s, -d s   : s in {data,exe,real,rss,size,stk,sys,user,gc,majgc,gcn,majgcn}.\n"
+            ; print "  -column c, -c c : Include column c.\n"
+            ; print "  -skip1          : Skip the first measument.\n"
+            ; print "  -rsd            : Separate columns for relative stddev.\n"
+            ; print "  -sd             : Report non-relative stddev.\n"
+            ; print "  -M              : Report memusage in Mb without extension.\n"
+            ; print "  -N              : Report counts without decimal places.\n"
+            ; print "  -latex          : Output LaTeX.\n"
+            ; print "  -merge_rows c   : Merge rows with same pname and different c's.\n"
 	    ; print "\n"
 	    ; print "FILES:\n"
 	    ; print "  file.json    : Json file.\n"
