@@ -1,0 +1,9 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  $(SML_LIB)/basis/par.mlb
+  ../util/CommandLineArgs.sml
+  ../util/Timing.sml
+  ../util/FuncSequence.sml
+in
+  nqueens.sml
+end

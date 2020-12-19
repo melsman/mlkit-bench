@@ -1,0 +1,3 @@
+Spheres(rgbbox) = 400
+Using scene 'rgbbox' (-s to switch).
+-f not passed, so not writing image to file.

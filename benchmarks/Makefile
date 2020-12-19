@@ -21,6 +21,10 @@ clean:
 	rm -rf raybench/MLB raybench/*~ nucleic/MLB nucleic/*~
 	rm -rf mlyacc/MLB mlyacc/*~ logic/MLB logic/*~ barnes-hut/MLB barnes-hut/*~
 
+# ------------------------------
+# GC / Region collection ratios
+# ------------------------------
+
 KEYS=DLX barnes-hut fft fib37 kbc lexgen life logic mandelbrot mlyacc mpuz msort-rf msort nucleic professor ratio ray simple tak tsp vliw zebra zern
 PCTFILES_rg=$(KEYS:%=%_rg.pct)
 PCTFILES_rGG=$(KEYS:%=%_rGG.pct)
@@ -38,7 +42,103 @@ pct: $(PCTFILES_rg) $(PCTFILES_rGG)
 	cat $(PCTFILES_rg)
 	cat $(PCTFILES_rGG)
 
+MLKIT=SML_LIB=$(MLKIT_ROOT) $(MLKIT_ROOT)/bin/mlkit
+
+# -----------------
+# Region profiles
+# -----------------
+
+mlyacc_GG_prof.exe: mlyacc.mlb
+	$(MLKIT) -no_ri -gengc -prof -o $@ $<
+
+mlyacc_g_prof.exe: mlyacc.mlb
+	$(MLKIT) -no_ri -prof -o $@ $<
+
+mlyacc_r_prof.exe: mlyacc.mlb
+	$(MLKIT) -no_gc -prof -o $@ $<
+
+mlyacc_rg_prof.exe: mlyacc.mlb
+	$(MLKIT) -prof -o $@ $<
+
+mlyacc_rGG_prof.exe: mlyacc.mlb
+	$(MLKIT) -gengc -prof -o $@ $<
+
+mlyacc_r_prof.pdf: mlyacc_r_prof.exe
+	./$< -microsec 10000 && $(MLKIT_ROOT)/bin/rp2ps -region -name "conf: r" && ps2pdf region.ps $@
+	@echo Wrote file: $@
+
+mlyacc_GG_prof.pdf: mlyacc_GG_prof.exe
+	./$< -microsec 1000 && $(MLKIT_ROOT)/bin/rp2ps -region -name "conf: G" && ps2pdf region.ps $@
+	@echo Wrote file: $@
+
+mlyacc_rGG_prof.pdf: mlyacc_rGG_prof.exe
+	./$< -microsec 1000 && $(MLKIT_ROOT)/bin/rp2ps -region -name "conf: rG" && ps2pdf region.ps $@
+	@echo Wrote file: $@
+
+mlyacc_%_prof.pdf: mlyacc_%_prof.exe
+	./$< -microsec 1000 && $(MLKIT_ROOT)/bin/rp2ps -region -name "conf: $*" && ps2pdf region.ps $@
+	@echo Wrote file: $@
+
+.PHONY: mlyacc_pdfs
+mlyacc_pdfs: mlyacc_g_prof.pdf mlyacc_GG_prof.pdf mlyacc_rg_prof.pdf mlyacc_rGG_prof.pdf mlyacc_r_prof.pdf
+
+# ----------------------------------------
+# Fragmentation functionality
+# ----------------------------------------
+%.gc.exe: %
+	SML_LIB=$(MLKIT_ROOT) $(MLKIT) -o $*.gc.exe $<
+
+%.gengc.exe: %
+	SML_LIB=$(MLKIT_ROOT) $(MLKIT) -gengc -o $*.gengc.exe $<
+
+%.norigc.exe: %
+	SML_LIB=$(MLKIT_ROOT) $(MLKIT) -no_ri -o $*.norigc.exe $<
+
+%.norigengc.exe: %
+	SML_LIB=$(MLKIT_ROOT) $(MLKIT) -no_ri -gengc -o $*.norigengc.exe $<
+
+%.frag: %.exe
+	/bin/echo -n "$*:" > $@
+	./$< -verbose_gc 2>&1 > /dev/null | grep -i Frag >> $@
+
+BENCHFILES_SORTED=DLX.sml barnes-hut.mlb fft.sml fib37.sml kbc.sml lexgen.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort-rf.sml msort.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml vliw.sml zebra.sml zern.sml
+
+FRAG_GC_FILES=$(BENCHFILES_SORTED:%=%.gc.frag)
+FRAG_GENGC_FILES=$(BENCHFILES_SORTED:%=%.gengc.frag)
+FRAG_NORIGC_FILES=$(BENCHFILES_SORTED:%=%.norigc.frag)
+FRAG_NORIGENGC_FILES=$(BENCHFILES_SORTED:%=%.norigengc.frag)
+
+frag.txt: $(FRAG_GC_FILES) $(FRAG_GENGC_FILES) $(FRAG_NORIGC_FILES) $(FRAG_NORIGENGC_FILES)
+	cat $(FRAG_GC_FILES) $(FRAG_GENGC_FILES) $(FRAG_NORIGC_FILES) $(FRAG_NORIGENGC_FILES) > $@
+	cat $@
+
+EXTRACT_FRAG=sed -e 's/avg:nan/avg:0/g' | sed -e 's/\([0-9A-Za-z-]*\).*Frag avg:[ ]*\([0-9]*\).*/\2/g'
+EXTRACT_NAMES=sed -e 's/avg:nan/avg:0/g' | sed -e 's/\([0-9A-Za-z-]*\).*Frag avg:[ ]*\([0-9]*\).*/\1/g'
+
+frag_names.txt: $(FRAG_GC_FILES)
+	cat $^ | $(EXTRACT_NAMES) > $@
+
+frag_rg.txt: $(FRAG_GC_FILES)
+	cat $^ | $(EXTRACT_FRAG) > $@
+
+frag_rGG.txt: $(FRAG_GENGC_FILES)
+	cat $^ | $(EXTRACT_FRAG) > $@
+
+frag_g.txt: $(FRAG_NORIGC_FILES)
+	cat $^ | $(EXTRACT_FRAG) > $@
+
+frag_GG.txt: $(FRAG_NORIGENGC_FILES)
+	cat $^ | $(EXTRACT_FRAG) > $@
+
+frags.txt: frag_names.txt frag_rg.txt frag_rGG.txt frag_g.txt frag_GG.txt
+	echo '%rg (%) \t rG (%) \t g (%) \t G (%)' > $@
+	paste $^ >> $@
+
+.PHONY: frags
+frags: frag_rg.txt frag_rGG.txt frag_g.txt frag_GG.txt
+
 .PHONY: version
 version:
 	@echo $(MLKIT_VERSION)
 	@echo $(TODAY)
+	@echo $(BENCHFILES_SORTED)
