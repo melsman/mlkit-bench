@@ -6,3 +6,7 @@ report*.json
 *.exe
 *~
 *.pct
+*.frag
+run
+region.pdf
+region.ps
