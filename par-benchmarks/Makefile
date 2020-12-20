@@ -11,7 +11,10 @@ all: report-par.json
 	cp $< report-par_$(MLKIT_VERSION)_$(MACHINE_TAG)_$(TODAY).json
 
 report-par.json:
-	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -n 10 -o $@ -mlkit:-no_gc -par: $(BENCHFILES)
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -n 10 -o $@ \
+          -mlkit:MLCOMP=mlkit-seq -no_gc: \
+          -mlkit:MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1: \
+          -mlkit:MLCOMP=mlkit-par -no_gc -par: $(BENCHFILES)
 
 .PHONY: clean
 clean:
@@ -25,4 +28,8 @@ version:
 
 .PHONY: press
 press: report-par.json
-	../src/press/mlkit-bench-press -data user -data real -data rss -c pname -c user -c real -c rss -skip1 $<
+	@../src/press/mlkit-bench-press -d real -skip1 \
+           -merge_rows cname -c pname \
+           -c 'real # MLKIT [MLCOMP=mlkit-seq -no_gc]' \
+           -c 'real # MLKIT [MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1]' \
+           -c 'real # MLKIT [MLCOMP=mlkit-par -no_gc -par]' $<

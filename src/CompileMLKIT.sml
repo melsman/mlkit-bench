@@ -17,11 +17,13 @@ fun mlkit_cmd () =
     in "SML_LIB=" ^ root ^ " " ^ root ^ "/bin/mlkit"
     end
 
-fun compile {flags:string, src:string} =
+fun compile {env:(string*string)list,flags:string, src:string} =
     let val {base,ext} = OS.Path.splitBaseExt src
 	val t = base ^ "_mlkit" ^ compact flags ^ ".exe"
         val cmd = mlkit_cmd() ^ " " ^ flags ^ " -o " ^ t ^ " " ^ src
-    in  print ("Executing: " ^ cmd ^ "\n")
+        val env = String.concatWith " " (map (fn (k,v) => k ^ "=" ^ v) env)
+        val cmd = env ^ " " ^ cmd
+    in  print ("Executing: '" ^ cmd ^ "'\n")
       ; if OS.Process.isSuccess(OS.Process.system cmd) then SOME t
 	else NONE
     end

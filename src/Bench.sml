@@ -100,6 +100,18 @@ fun getCompileArgs (nil, comps, out) = NONE
              | _ => NONE)
       | _ => SOME (s::ss, rev comps, out)
 
+fun splitFlags (flags:string) : {env:(string*string)list,flags:string} =
+    let val ss = String.tokens (fn #" " => true | _ => false) flags
+        fun split (nil, env, flags) =
+            {env=rev env, flags=String.concatWith " " (rev flags)}
+          | split (x::xs, env, flags) =
+            case String.tokens (fn #"=" => true | _ => false) x of
+                [k,v] => split (xs,(k,v)::env,flags)
+              | [_] => split(xs,env,x::flags)
+              | _ => raise Fail "expecting at most one '=' character in flag"
+    in split (ss,nil,nil)
+    end
+
 fun getNameComp c =
     let val head = pr_compiler c
     in case c of
@@ -203,10 +215,11 @@ fun linesOfFile f =
 
 fun process_progs ps c : line list =
     let val {head,compile,cversion,flags} = getNameComp c
+        val {env,flags} = splitFlags flags
 	val _ = print ("[Processing benchmark programs for " ^ head ^ "]\n")
         fun process_prog p : line =
             let val (outfile, ctime, runs) =
-                    process (fn s => timewrap compile {flags=flags,src=s}) p
+                    process (fn s => timewrap compile {env=env,flags=flags,src=s}) p
                 val binsz = Posix.FileSys.ST.size (Posix.FileSys.stat outfile)
                             div 1000 handle _ => ~1  (* ST.size returns number in bytes *)
             in {cname=head,
@@ -269,7 +282,9 @@ fun main (progname, args) =
 	    ; print "  -o file                  Write json output to `file`.\n"
             ; print "  -n n                     Set number of repetitions to n.\n"
             ; print "FLAG options to -mlton and -mlkit are passed to\n"
-	    ; print "  the compiler.\n"
+	    ; print "  the compiler, with the exceptions of a flag of the form\n"
+            ; print "  K=V, which sets the environment variable K to V during\n"
+            ; print "  compilation and during execution.\n"
 	    ; print "FILES:\n"
 	    ; print "  file.sml         Standard ML source file.\n"
 	    ; print "  file.mlb         ML Basis file.\n"
