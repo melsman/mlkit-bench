@@ -180,7 +180,7 @@ sys          0.02
 
     local
       fun findLine lines s : string =
-          case List.find (String.isPrefix s) lines of
+          case List.find (String.isSubstring s) lines of
               SOME l => l
             | NONE => raise Fail ("findLine: cannot find line with string '" ^ s ^ "'")
 
