@@ -209,7 +209,7 @@ sys          0.02
                       (case Real.fromString s of
                            SOME s => s + real (60*m)
                          | NONE => raise Fail ("lookTime: failed to find seconds in '" ^ l ^ "'"))
-                    | NONE => raise Fail ("lookTime: failed to find minutes in '" ^ l ^ "'"))
+                    | NONE => raise Fail ("lookTime: failed to find minutes in '" ^ l ^ "' (m='" ^ m ^ "', m2='" ^ maybeElimZeroPrefix m ^ "')"))
                | _ => raise Fail ("lookTime: failed to find ':' in '" ^ l ^ "'")
           end
     in
