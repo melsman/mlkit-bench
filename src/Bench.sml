@@ -179,7 +179,10 @@ fun timewrap f x =
 
 fun getMachine () =
     let fun sysOut1 s = FileUtil.trimWS(FileUtil.systemOut s)
-    in sysOut1 "uname -srm" ^ " - " ^ sysOut1 "sysctl -n machdep.cpu.brand_string"
+        val uname = sysOut1 "uname -srm"
+    in if String.isSubstring "Darwin" uname then
+         uname ^ " - " ^ sysOut1 "sysctl -n machdep.cpu.brand_string"
+       else uname
     end
 
 val today = Date.fromTimeLocal(Time.now())
