@@ -194,7 +194,8 @@ sys          0.02
           end
 
       fun maybeElimZeroPrefix s =
-          if size s > 0 then
+          if s = "0" then s
+          else if size s > 0 then
             if String.sub(s,0) = #" " then maybeElimZeroPrefix(String.extract(s,1,NONE))
             else if String.sub(s,0) = #"0" then String.extract(s,1,NONE)
             else s
