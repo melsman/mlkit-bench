@@ -53,7 +53,8 @@ fun process (compile: string -> string option * Time.time) (p:string)
                        exec_n (!repetitions)
                               {out_file=fn i => t ^ ".out." ^ Int.toString i,
                                cmd=cmd})
-	              handle _ => raise Fail ("Failure executing command " ^ cmd)
+	              handle Fail s => raise Fail ("Failure executing command '" ^ cmd ^ "': " ^ s)
+                           | X => raise Fail ("Failure executing command '" ^ cmd ^ "': " ^ General.exnMessage X)
         in if files_equal(p ^ ".out.ok", out) then res
            else raise Fail ("File " ^ p ^ ".out.ok does not match " ^ out)
 	end
@@ -237,16 +238,17 @@ fun process_progs ps c : line list =
                 err=""} : line
             end
             handle Fail msg =>
-                   {cname=head,
-                    cversion=cversion,
-                    date=today,
-                    mach=machine,
-                    pname=p,
-                    plen=linesOfFile p,
-                    ctime= 0.0,
-                    binsz= 0,
-                    runs=nil,
-                    err=msg} : line
+                   (print ("Error: " ^ msg ^ "\n");
+                    {cname=head,
+                     cversion=cversion,
+                     date=today,
+                     mach=machine,
+                     pname=p,
+                     plen=linesOfFile p,
+                     ctime= 0.0,
+                     binsz= 0,
+                     runs=nil,
+                     err=msg}) : line
     in map process_prog ps
     end
 
