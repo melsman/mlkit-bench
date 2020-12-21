@@ -58,42 +58,7 @@ structure MemTime : MEM_TIME where type measurement = DataType.measurement =
         in s
         end
 
-(* macos format of '/usr/bin/time -lp':
-real         0.22
-user         0.18
-sys          0.02
-  18812928  maximum resident set size
-         0  average shared memory size
-         0  average unshared data size
-         0  average unshared stack size
-     13338  page reclaims
-         0  page faults
-         0  swaps
-         0  block input operations
-         0  block output operations
-         0  messages sent
-         0  messages received
-         0  signals received
-         0  voluntary context switches
-        62  involuntary context switches
-*)
     fun splitLines s = String.tokens (fn c => c = #"\n") s
-
-    fun lookR lines s =
-        case List.find (String.isSuffix s) lines of
-            SOME l => (case Real.fromString l of
-                           SOME v => v
-                         | NONE => raise Fail ("lookR: cannot read real in line '" ^ l ^ "'"))
-          | NONE => raise Fail ("lookR: cannot find line with string '" ^ s ^ "'")
-    fun lookL lines s =
-        case List.find (String.isPrefix s) lines of
-            SOME l =>
-            let val k = String.extract(l,size s,NONE)
-            in (case Real.fromString k of
-                    SOME v => v
-                  | NONE => raise Fail ("lookL: cannot read real in line '" ^ l ^ "'"))
-            end
-          | NONE => raise Fail ("lookL: cannot find line with string '" ^ s ^ "'")
 
     fun gcinfo (lines:string list) : {gc:real,majgc:real,gcn:int,majgcn:int} option =
         case List.find (String.isPrefix "[GC(") lines of
@@ -117,37 +82,75 @@ sys          0.02
                 | _ => NONE
             end
 
-    fun memTime_macos {cmd, args, out_file, eout_file} : measurement =
-        let val timeout = case eout_file of
-                              SOME f => f
-                            | NONE => "time.out"
-            val args = String.concatWith " " args
-            val command = cmd ^ " " ^ args ^ " > " ^ out_file
-            val command2 = "/usr/bin/time -lp " ^ command ^ " 2> " ^ timeout
-            val () = OS.FileSys.remove timeout handle _ => ()
-            val () = SysUtil.system command2 handle _ => SysUtil.error "Failed to execute command"
-            val s = readAll timeout handle _ => SysUtil.error "Failed to read output file"
-            val lines = splitLines s
-            val rss = Real.floor (lookR lines "maximum resident set size")
-            val rss = rss div 1000
-            val size = 0
-            val data = 0
-            val stk = 0
-            val exe = 0
-            val sys = lookL lines "sys"
-            val real = lookL lines "real"
-            val user = lookL lines "user"
-            val {gc,gcn,majgc,majgcn} =
-                case gcinfo lines of
-                    SOME r => r
-                  | MONE => {gc=0.0,gcn=0,majgc=0.0,majgcn=0}
-        in {size=size,rss=rss,
-	    data=data,stk=stk,exe=exe,
-	    sys=sys,
-	    user=user,
-	    real=real,
-            gc=gc,gcn=gcn,majgc=majgc,majgcn=majgcn}
-        end
+(* macos format of '/usr/bin/time -lp':
+real         0.22
+user         0.18
+sys          0.02
+  18812928  maximum resident set size
+         0  average shared memory size
+         0  average unshared data size
+         0  average unshared stack size
+     13338  page reclaims
+         0  page faults
+         0  swaps
+         0  block input operations
+         0  block output operations
+         0  messages sent
+         0  messages received
+         0  signals received
+         0  voluntary context switches
+        62  involuntary context switches
+*)
+
+    local
+      fun lookR lines s =
+          case List.find (String.isSuffix s) lines of
+              SOME l => (case Real.fromString l of
+                             SOME v => v
+                           | NONE => raise Fail ("lookR: cannot read real in line '" ^ l ^ "'"))
+            | NONE => raise Fail ("lookR: cannot find line with string '" ^ s ^ "'")
+      fun lookL lines s =
+          case List.find (String.isPrefix s) lines of
+              SOME l =>
+              let val k = String.extract(l,size s,NONE)
+              in (case Real.fromString k of
+                      SOME v => v
+                    | NONE => raise Fail ("lookL: cannot read real in line '" ^ l ^ "'"))
+              end
+            | NONE => raise Fail ("lookL: cannot find line with string '" ^ s ^ "'")
+    in
+      fun memTime_macos {cmd, args, out_file, eout_file} : measurement =
+          let val timeout = case eout_file of
+                                SOME f => f
+                              | NONE => "time.out"
+              val args = String.concatWith " " args
+              val command = cmd ^ " " ^ args ^ " > " ^ out_file
+              val command2 = "/usr/bin/time -lp " ^ command ^ " 2> " ^ timeout
+              val () = OS.FileSys.remove timeout handle _ => ()
+              val () = SysUtil.system command2 handle _ => SysUtil.error "Failed to execute command"
+              val s = readAll timeout handle _ => SysUtil.error "Failed to read output file"
+              val lines = splitLines s
+              val rss = Real.floor (lookR lines "maximum resident set size")
+              val rss = rss div 1000
+              val size = 0
+              val data = 0
+              val stk = 0
+              val exe = 0
+              val sys = lookL lines "sys"
+              val real = lookL lines "real"
+              val user = lookL lines "user"
+              val {gc,gcn,majgc,majgcn} =
+                  case gcinfo lines of
+                      SOME r => r
+                    | MONE => {gc=0.0,gcn=0,majgc=0.0,majgcn=0}
+          in {size=size,rss=rss,
+	      data=data,stk=stk,exe=exe,
+	      sys=sys,
+	      user=user,
+	      real=real,
+              gc=gc,gcn=gcn,majgc=majgc,majgcn=majgcn}
+          end
+    end
 
 (* linux format of '/usr/bin/time -v':
 	Command being timed: "./lexgen"
@@ -175,8 +178,85 @@ sys          0.02
 	Exit status: 0
 *)
 
-    fun memTime_linux {cmd, args, out_file, eout_file} : measurement = raise Fail "memTime_linux not implemented"
+    local
+      fun findLine lines s : string =
+          case List.find (String.isPrefix s) lines of
+              SOME l => l
+            | NONE => raise Fail ("findLine: cannot find line with string '" ^ s ^ "'")
 
-    val memTime = if true then memTime_macos
-                  else memTime_linux
+      fun look lines s : real =
+          let val l = findLine lines s
+          in case String.tokens (fn c => c = #":") l of
+                 [_,v] => (case Real.fromString v of
+                               SOME r => r
+                             | NONE => raise Fail ("look: cannot read real in line '" ^ l ^ "'"))
+               | _ => raise Fail ("look: failed to find a single ':' in '" ^ l ^ "'")
+          end
+
+      fun maybeElimZeroPrefix s =
+          if size s > 0 then
+            if String.sub(s,0) = #" " then maybeElimZeroPrefix(String.extract(s,1,NONE))
+            else if String.sub(s,0) = #"0" then String.extract(s,1,NONE)
+            else s
+          else s
+
+      fun lookTime lines s : real =
+          let val l = findLine lines s
+          in case rev(String.tokens (fn c => c = #":") l) of
+                 s :: m :: _ =>
+                 (case Int.fromString (maybeElimZeroPrefix m) of
+                      SOME m =>
+                      (case Real.fromString s of
+                           SOME s => s + real (60*m)
+                         | NONE => raise Fail ("lookTime: failed to find seconds in '" ^ l ^ "'"))
+                    | NONE => raise Fail ("lookTime: failed to find minutes in '" ^ l ^ "'"))
+               | _ => raise Fail ("lookTime: failed to find ':' in '" ^ l ^ "'")
+          end
+    in
+      fun memTime_linux {cmd, args, out_file, eout_file} : measurement =
+        let val timeout = case eout_file of
+                              SOME f => f
+                            | NONE => "time.out"
+            val args = String.concatWith " " args
+            val command = cmd ^ " " ^ args ^ " > " ^ out_file
+            val command2 = "/usr/bin/time -v " ^ command ^ " 2> " ^ timeout
+            val () = OS.FileSys.remove timeout handle _ => ()
+            val () = SysUtil.system command2
+                     handle _ => SysUtil.error ("Failed to execute command '" ^ command2 ^ "'")
+            val s = readAll timeout
+                    handle _ => SysUtil.error ("Failed to read output file " ^ timeout)
+            val lines = splitLines s
+            val rss = Real.floor (look lines "Maximum resident set size")
+            val size = 0
+            val data = 0
+            val stk = 0
+            val exe = 0
+            val sys = look lines "System time"
+            val real = lookTime lines "Elapsed (wall clock) time"
+            val user = look lines "User time"
+            val {gc,gcn,majgc,majgcn} =
+                case gcinfo lines of
+                    SOME r => r
+                  | MONE => {gc=0.0,gcn=0,majgc=0.0,majgcn=0}
+        in {size=size,rss=rss,
+	    data=data,stk=stk,exe=exe,
+	    sys=sys,
+	    user=user,
+	    real=real,
+            gc=gc,gcn=gcn,majgc=majgc,majgcn=majgcn}
+        end
+    end
+
+    fun sysname () =
+        let fun look s l =
+                case l of
+                    nil => NONE
+                  | (k,v)::l => if s = k then SOME v else look s l
+        in look "sysname" (Posix.ProcEnv.uname())
+        end
+
+    fun memTime x =
+        case sysname() of
+            SOME "Darwin" => memTime_macos x
+          | _ => memTime_linux x
   end
