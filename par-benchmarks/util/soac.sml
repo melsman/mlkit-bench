@@ -18,37 +18,46 @@ signature SOAC = sig
   type 'a arr            (* pull-array *)
 
   type gcs = int * int (* max parallelism (P), min work (Grain) *)
-  val gcs_par         : gcs
-  val gcs_seq         : gcs
-  val gcs_split       : gcs -> gcs * gcs   (* maintain grain, put split parallelism *)
+  val gcs_par          : gcs
+  val gcs_seq          : gcs
+  val gcs_split        : gcs -> gcs * gcs   (* maintain grain, put split parallelism *)
 
-  val size            : 'a arr -> int
-  val map             : ('a -> 'b) -> 'a arr -> 'b arr
-  val iota            : int -> int arr
-  val take            : int -> 'a arr -> 'a arr
-  val drop            : int -> 'a arr -> 'a arr
-  val split           : 'a arr -> 'a arr * 'a arr
+  val empty            : unit -> 'a arr
+  val size             : 'a arr -> int
+  val map              : ('a -> 'b) -> 'a arr -> 'b arr
+  val repl             : int -> 'a -> 'a arr
+  val iota             : int -> int arr
+  val take             : int -> 'a arr -> 'a arr
+  val drop             : int -> 'a arr -> 'a arr
+  val split            : 'a arr -> 'a arr * 'a arr
 
-  val reduce          : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a
-  val zreduce         : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a
-  val zreduce__inline : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a
+  val reduce           : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a
+  val reduce__inline   : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a
 
-  val scan            : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
-  val zscan           : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
-  val zscan__inline   : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
-  val filter          : gcs -> 'a -> (bool * 'a) arr -> 'a array
-  val toArray         : gcs -> 'a -> 'a arr -> 'a array
-  val memoize         : gcs -> 'a -> 'a arr -> 'a arr
-  val fromArray       : 'a array -> 'a arr
+  val scan             : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
+  val scan__inline     : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
+
+  val toArray          : gcs -> 'a arr -> 'a array
+  val memoize          : gcs -> 'a arr -> 'a arr
+  val fromArray        : 'a array -> 'a arr
 
   (* combinators for nested parallelism *)
-  val ppar            : gcs -> (gcs -> 'a) * (gcs -> 'b) -> 'a * 'b
+  val ppar             : gcs -> (gcs -> 'a) * (gcs -> 'b) -> 'a * 'b
+
+  structure Array :
+    sig
+      val map             : gcs -> ('a -> 'b) -> 'a array -> 'b array
+      val empty           : unit -> 'a array
+      val filter          : gcs -> bool array -> 'a array -> 'a array
+      val filter'         : gcs -> ('a -> bool) -> 'a array -> 'a array
+      val filter'__inline : gcs -> ('a -> bool) -> 'a array -> 'a array
+    end
 
   (* functions that need be exported for x-module inlining *)
-  val zscan__noinline : ('a arr * int * 'a array -> unit)
-                        -> ('a array * int * 'a array * int * int -> unit)
-                        -> gcs -> 'a -> 'a arr -> 'a array
-  val zreduce__noinline : ('a arr -> 'a) -> gcs -> 'a -> 'a arr -> 'a
+  val scan__noinline   : ('a arr * int * 'a array -> unit)
+                         -> ('a array * int * 'a array * int * int -> unit)
+                         -> gcs -> 'a -> 'a arr -> 'a array
+  val reduce__noinline : ('a arr -> 'a) -> gcs -> 'a -> 'a arr -> 'a
 end
 
 structure SOAC: SOAC = struct
@@ -61,6 +70,8 @@ structure A = Array
 
 fun upd a i x = A.update (a, i, x)
 fun nth a i   = A.sub (a, i)
+fun empty_array () : 'a array =
+    A.tabulate(0, fn _ => raise Fail "empty_array")
 
 val parfor = ForkJoin.parfor
 val parfor' = ForkJoin.parfor'
@@ -81,14 +92,18 @@ val gcs_par = (maxNat,1)       (* 1: minimum sequential work *)
 val gcs_seq = (0,maxNat)       (* 0: no more new threads *)
 
 fun gcs_split (P,G) = let val P' = P div 2
-                        in ((P',G),(P-P',G))
-                        end
+                      in ((P',G),(P-P',G))
+                      end
 
-fun iota hi : int arr = (0,hi,fn x => x)
+fun iota n : int arr = (0,n,fn x => x)
+
+fun empty () : 'a arr = (0,0,fn _ => raise Fail "empty")
 
 fun size (lo,hi,_) : int = hi - lo
 
 fun map f (lo,hi,g) = (lo,hi,f o g)
+
+fun repl n v = (0,n,fn _ => v)
 
 fun take k (lo,hi,f) =
     if k >= 0 then (lo,Int.min(hi,lo+k),f)
@@ -122,62 +137,25 @@ fun ppar (gcs:gcs) (f:gcs->'a,g:gcs->'b) : 'a * 'b =
 fun sequential ((P,G): gcs) (n:int) : bool =
     P <= 0 orelse n <= G
 
-fun reduce gcs g a (arr:'a arr) =
-    if sequential gcs (size arr) then foldl g a arr
-    else let val (arr1,arr2) = split arr
-         in ppar gcs (fn gcs1 => reduce gcs1 g a arr1,
-                      fn gcs2 => reduce gcs2 g a arr2)
-            |> g
-         end
-
-fun toArray gcs (b:'a) (arr:'a arr) : 'a array =
+fun toArray gcs (arr:'a arr) : 'a array =
     let val n = size arr
-        val (lo,_,f) = arr
-        val result = allocate n b
-    in parfor' gcs (0, n) (fn i => upd result i (f (lo+i)))
-     ; result
+    in if n = 0 then empty_array()
+       else let val (lo,_,f) = arr
+                val b = f lo
+                val result = allocate n b   (* allocate may not *)
+            in upd result 0 b               (* actually write b *)
+             ; parfor' gcs (1, n) (fn i => upd result i (f (lo+i)))
+             ; result
+            end
     end
 
-fun memoize (gcs:gcs) (a:'a) (arr:'a arr) : 'a arr =
-    toArray gcs a arr |> fromArray
+fun memoize (gcs:gcs) (arr:'a arr) : 'a arr =
+    toArray gcs arr |> fromArray
 
-fun scan (gcs:gcs) (g:'a*'a->'a) (b:'a) (arr:'a arr) : 'a array =
-    let val n = size arr
-    in if sequential gcs n then
-         let val result = allocate (n+1) b
-             fun bump ((j,b),x) = (upd result j b; (j+1, g (b, x)))
-             val (_, total) = foldl bump (0, b) arr
-         in upd result n total
-          ; result
-         end
-       else
-         let val (lo,hi,f) = arr
-             val (P,G) = gcs
-             val m = Int.min(P+1,1 + (n-1) div G) (* number of blocks *)
-             val k = n div m
-             val sums = toArray (P,1) b
-                                (0,m,
-                                 fn i =>
-                                    let val start = lo + i*k
-                                    in foldl g b (start,Int.min(start+k,hi),f)
-                                    end)
-             val partials = scan gcs g b (0,m,nth sums)
-             val result = allocate (n+1) b
-         in parfor' (P,1) (0, m)
-                    (fn i =>
-                        let fun bump ((j,b),x) = (upd result j b; (j+1, g (b, x)))
-                            val start = lo + i*k
-                        in foldl bump (i*k, nth partials i) (start,Int.min(start+k,hi),f)
-                         ; ()
-                        end)
-          ; upd result n (nth partials m)
-          ; result
-         end
-    end
 
 (* geee - when g is passed, the argument pair to g is forced to be in
    a region which is fixed for (and global to) all calls to g within
-   zscan... We solve this issue by partial inlining... *)
+   scan... We solve this issue by partial inlining... *)
 
 datatype segm = SEQ | PAR of {blks:int, blksz:int}
 
@@ -189,7 +167,7 @@ fun parallel ((P,G):gcs) (n:int) : segm =
          in PAR {blks=blks, blksz=blksz}
          end
 
-fun zscan__noinline (seqScan: 'a arr * int * 'a array -> unit)
+fun scan__noinline (seqScan: 'a arr * int * 'a array -> unit)
                     (seqDist: 'a array * int * 'a array * int * int -> unit)
                     (gcs:gcs) (b:'a) (arr:'a arr) : 'a array =
     let val n = size arr
@@ -221,8 +199,8 @@ fun zscan__noinline (seqScan: 'a arr * int * 'a array -> unit)
            end
     end
 
-
-fun zscan__inline (gcs:gcs) (g:'a*'a->'a) (b:'a) (arr:'a arr) : 'a array =
+(* inclusive scan *)
+fun scan__inline (gcs:gcs) (g:'a*'a->'a) (b:'a) (arr:'a arr) : 'a array =
     let fun seqScan (arr:'a arr, tgt_offset:int, tgt:'a array) : unit =
             let val (lo,hi,f) = arr
                 val n = size arr
@@ -243,45 +221,12 @@ fun zscan__inline (gcs:gcs) (g:'a*'a->'a) (b:'a) (arr:'a arr) : 'a array =
                          ; loop (j+1,hi))
             in loop (i*blksz,Int.min(n,(i+1)*blksz))
             end
-    in zscan__noinline seqScan seqDist gcs b arr
+    in scan__noinline seqScan seqDist gcs b arr
     end
 
-val zscan = zscan__inline
+val scan = scan__inline
 
-fun filter gcs (b:'a) (arr:(bool*'a)arr) : 'a array =
-    let
-      val (lo,hi,f) = arr
-      val g : int -> bool = #1 o f
-      val f : int -> 'a = #2 o f
-      val n = size arr
-      val (P,G) = gcs
-      val m = Int.min(P+1,1 + (n-1) div G) (* number of blocks *)
-      val k = n div m
-      fun count (i, j, c) =
-        if i >= j then c
-        else if g i then count (i+1, j, c+1)
-        else count (i+1, j, c)
-      val counts = toArray (P,1) 0
-                           (0,m,
-                            fn i =>
-                               let val start = lo + i*k
-                               in count (start, Int.min (start+k, hi), 0)
-                               end)
-      val offsets = scan gcs op+ 0 (0,m,nth counts)
-      val result = allocate (nth offsets m) b
-      fun filterSeq (i, j, c) =
-        if i >= j then ()
-        else if g i then (upd result c (f i); filterSeq (i+1, j, c+1))
-        else filterSeq (i+1, j, c)
-    in parfor' (P,1) (0, m)
-               (fn i =>
-                   let val start = lo + i*k
-                   in filterSeq (start, Int.min (start+k, hi), nth offsets i)
-                   end)
-     ; result
-    end
-
-fun zreduce__noinline (seqRed: 'a arr -> 'a) (gcs:gcs) (b:'a) (arr:'a arr) : 'a =
+fun reduce__noinline (seqRed: 'a arr -> 'a) (gcs:gcs) (b:'a) (arr:'a arr) : 'a =
     case parallel gcs (size arr) of
         SEQ => seqRed arr
       | PAR {blks,blksz} =>
@@ -295,11 +240,58 @@ fun zreduce__noinline (seqRed: 'a arr -> 'a) (gcs:gcs) (b:'a) (arr:'a arr) : 'a 
         in seqRed (0,blks,nth sums)
         end
 
-fun zreduce__inline (gcs:gcs) (g:'a*'a->'a) (b:'a) (arr:'a arr) : 'a =
+fun reduce__inline (gcs:gcs) (g:'a*'a->'a) (b:'a) (arr:'a arr) : 'a =
     let fun seqRed (arr:'a arr) : 'a = foldl g b arr
-    in zreduce__noinline seqRed gcs b arr
+    in reduce__noinline seqRed gcs b arr
     end
 
-val zreduce = zreduce__inline
+val reduce = reduce__inline
+
+structure Array = struct
+
+val empty = empty_array
+
+fun map gcs (f:'a -> 'b) (arr: 'a array) : 'b array =
+    let val sz = Array.length arr
+    in if sz = 0 then empty()
+       else let val b = f(nth arr 0)
+                val tgt = allocate sz b
+            in upd tgt 0 b
+             ; parfor' gcs (0,sz)
+                       (fn i => upd tgt i (f(nth arr i)))
+             ; tgt
+            end
+    end
+
+fun filter (gcs:gcs) (bs: bool array) (xs: 'a array) : 'a array =
+    let val bs_sz = Array.length bs
+        val xs_sz = Array.length xs
+    in if bs_sz <> xs_sz then raise Size
+       else if xs_sz = 0 then xs
+       else let val fs = map gcs (fn b => if b then 1 else 0) bs
+                val is = scan__inline gcs (op +) 0 (fromArray fs)     (* inclusive scan *)
+                val sz = nth is (bs_sz - 1)
+            in if sz = 0 then empty()
+               else let val b = nth xs 0
+                        val result = allocate sz b
+                    in parfor' gcs (0,bs_sz)
+                               (fn i => if nth bs i then
+                                          upd result (nth is i - 1) (nth xs i)
+                                        else ()
+                               )
+                     ; result
+                    end
+            end
+    end
+
+fun filter'__inline (gcs:gcs) (f: 'a -> bool) (xs:'a array) : 'a array =
+    let val bs = map gcs f xs
+    in filter gcs bs xs
+    end
+
+val filter' = filter'__inline
+
+
+end
 
 end
