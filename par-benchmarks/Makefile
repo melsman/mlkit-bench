@@ -1,5 +1,5 @@
 MLKIT_ROOT ?= ~/gits/mlkit
-BENCHFILES=fib/fib.mlb pmsort/pmsort.mlb ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb
+BENCHFILES=scan/scan.mlb fib/fib.mlb pmsort/pmsort.mlb ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb
 MLKIT_BENCH=../src/mlkit-bench
 
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')
@@ -29,7 +29,7 @@ version:
 
 .PHONY: press
 press: report-par.json
-	@../src/press/mlkit-bench-press -d real -skip1 \
+	@../src/press/mlkit-bench-press -d real -d rss -skip1 \
            -merge_rows cname -c pname \
            -c "real # MLTON [-mlb-path-var 'MLCOMP mlton']" \
            -c 'real # MLKIT [MLCOMP=mlkit-seq -no_gc]' \

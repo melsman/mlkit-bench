@@ -1,6 +1,2 @@
 $(SML_LIB)/basis/real64_blocks.mlb
-local
-  $(SML_LIB)/basis/basis.mlb
-in FORK_JOIN.sig
-   ForkJoinSeq.sml
-end
+$(SML_LIB)/basis/par-seq.mlb
