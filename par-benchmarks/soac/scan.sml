@@ -5,7 +5,7 @@ val gcs : S.gcs =
     (CommandLineArgs.parseInt "P" 10,
      CommandLineArgs.parseInt "G" 100000)
 
-val N = CommandLineArgs.parseInt "N" 10000000
+val N = CommandLineArgs.parseInt "N" 50000000
 
 val () = print ("Scanning " ^ Int.toString N ^ " numbers\n")
 

@@ -3,7 +3,7 @@ local
   ../util/CommandLineArgs.sml
   ../util/Timing.sml
   ../util/$(MLCOMP).mlb
-  ../util/SeqBasis.sml
+  ../util/soac.sml
 in
   primes.sml
 end

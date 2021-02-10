@@ -37,8 +37,9 @@ signature SOAC = sig
   val scan             : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
   val scan__inline     : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
 
-  val toArray          : gcs -> 'a arr -> 'a array
-  val memoize          : gcs -> 'a arr -> 'a arr
+  val toArray          : gcs -> 'a -> 'a arr -> 'a array
+(*  val toArray__inline  : gcs -> 'a -> 'a arr -> 'a array *)
+  val memoize          : gcs -> 'a -> 'a arr -> 'a arr
   val fromArray        : 'a array -> 'a arr
 
   (* combinators for nested parallelism *)
@@ -58,13 +59,29 @@ signature SOAC = sig
                          -> ('a array * int * 'a array * int * int -> unit)
                          -> gcs -> 'a -> 'a arr -> 'a array
   val reduce__noinline : ('a arr -> 'a) -> gcs -> 'a -> 'a arr -> 'a
+
+(*
+  val toArray__noinline : ('a array -> int*int -> unit) -> 'a -> gcs -> int*int -> 'a array
+
+  val for : int * int -> (int -> unit) -> unit
+*)
 end
+
 
 structure SOAC: SOAC = struct
 
 (* some utilities *)
 infix |>
 fun v |> f = f v
+
+(*
+fun for (lo,hi) (f:int->unit) : unit =
+    let fun loop i =
+            if i >= hi then ()
+            else (f i; loop (i+1))
+    in loop lo
+    end
+*)
 
 structure A = Array
 
@@ -137,21 +154,35 @@ fun ppar (gcs:gcs) (f:gcs->'a,g:gcs->'b) : 'a * 'b =
 fun sequential ((P,G): gcs) (n:int) : bool =
     P <= 0 orelse n <= G
 
-fun toArray gcs (arr:'a arr) : 'a array =
+fun toArray gcs (b:'a) (arr:'a arr) : 'a array =
     let val n = size arr
     in if n = 0 then empty_array()
        else let val (lo,_,f) = arr
-                val b = f lo
-                val result = allocate n b   (* allocate may not *)
-            in upd result 0 b               (* actually write b *)
-             ; parfor' gcs (1, n) (fn i => upd result i (f (lo+i)))
+                val result = allocate n b
+            in parfor' gcs (0, n) (fn i => upd result i (f (lo+i)))
+             ; result
+            end
+    end
+(*
+fun toArray__noinline doit (b:'a) gcs (lo,hi) : 'a array =
+    let val n = hi-lo
+    in if n <= 0 then empty_array()
+       else let val result = allocate n b
+            in ForkJoin.parfor'__noinline (doit result) gcs (0,n)
              ; result
             end
     end
 
-fun memoize (gcs:gcs) (arr:'a arr) : 'a arr =
-    toArray gcs arr |> fromArray
+fun toArray__inline gcs (b:'a) ((lo,hi,f):'a arr) : 'a array =
+    let fun doit (result:'a array) (a,b) : unit =
+            for (a,b) (fn i => upd result i (f (lo+i)))
+    in toArray__noinline doit b gcs (lo,hi)
+    end
 
+val toArray = toArray__inline
+*)
+fun memoize (gcs:gcs) (b:'a) (arr:'a arr) : 'a arr =
+    toArray gcs b arr |> fromArray
 
 (* geee - when g is passed, the argument pair to g is forced to be in
    a region which is fixed for (and global to) all calls to g within

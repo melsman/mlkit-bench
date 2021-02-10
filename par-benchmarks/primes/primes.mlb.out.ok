@@ -1,2 +1,5 @@
-Generating primes up to 100000000
-Number of primes: 5761455
+Calculating the number of primes below or equal to 1000000
+Computing local scans
+Scanning sums
+Distribute sums
+There are 78498 primes below or equal to 1000000

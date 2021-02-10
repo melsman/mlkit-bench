@@ -10,7 +10,7 @@ val N = CommandLineArgs.parseInt "N" 10000000
 val () = print ("Scanning " ^ Int.toString N ^ " numbers\n")
 
 val a0 = S.map Int64.fromInt (S.iota N)
-val a = S.toArray gcs a0
+val a = S.toArray gcs 0 a0
 
 val endTiming = Timing.start "Filtering array"
 val b = S.Array.filter'__inline gcs (fn x => x mod 99 = 0) a

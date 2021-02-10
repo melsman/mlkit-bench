@@ -1,51 +1,41 @@
-(* Benchmark copied from MaPLe (MPL)
-   https://github.com/MPLLang/mpl/blob/master/examples/
-   Modified for use with MLKit
- *)
 
-val G = CommandLineArgs.parseInt "G" (10*1000*1000)
+structure S = SOAC
 
-(* primes: int -> int array
- * generate all primes up to (and including) n *)
-fun primes n =
-  if n < 2 then ForkJoin.alloc 0 0 else
-  let
-    (* all primes up to sqrt(n) *)
-    val sqrtPrimes = primes (Real.floor (Math.sqrt (Real.fromInt n)))
+val gcs : S.gcs =
+    (CommandLineArgs.parseInt "P" 10,
+     CommandLineArgs.parseInt "G" 100000)
 
-    (* allocate array of flags to mark primes. *)
-    val flags = ForkJoin.alloc (n+1) 0w0 : Word8.word array
-    fun mark i = Array.update (flags, i, 0w0)
-    fun unmark i = Array.update (flags, i, 0w1)
-    fun isMarked i = Array.sub (flags, i) = 0w0
+val N = CommandLineArgs.parseInt "N" 1000000
 
-    (* initially, mark every number *)
-    val _ = ForkJoin.parfor G (0, n+1) mark
+val () = print ("Calculating the number of primes below or equal to " ^ Int.toString N ^ "\n")
 
-    (* unmark every multiple of every prime in sqrtPrimes *)
-    val _ =
-      ForkJoin.parfor 1 (0, Array.length sqrtPrimes) (fn i =>
-        let
-          val p = Array.sub (sqrtPrimes, i)
-          val numMultiples = n div p - 1
-        in
-          ForkJoin.parfor G (0, numMultiples) (fn j => unmark ((j+2) * p))
-        end)
-  in
-    (* for every i in 2 <= i <= n, filter those that are still marked *)
-    SeqBasis.filter G 0 (2, n+1) (fn i => i) isMarked
-  end
+fun concat_array (a1,a2) =
+    let val sz1 = Array.length a1
+    in Array.tabulate(sz1 + Array.length a2,
+                      fn i => Array.sub(if i >= sz1
+                                        then (a2,i-sz1)
+                                        else (a1,i)))
+    end
 
-(* ==========================================================================
- * parse command-line arguments and run
- *)
+(* calculate primes below or equal to n *)
+fun primes n : int array =
+    if n < 2 then S.Array.empty()
+    else let val c = Real.floor (Math.sqrt(real n))
+             val ps0 = primes c
+             val ps = S.fromArray ps0
+             val is = S.toArray gcs 0 (S.map (fn x => x+c+1) (S.iota(n-c)))
+             val fs = S.map (fn i =>
+                                let val xs = S.map (fn p => if i mod p = 0 then 1 else 0) ps
+                                in S.reduce__inline S.gcs_seq (op +) 0 xs
+                                end) (S.fromArray is)
+             val fs = S.toArray gcs 0 fs
+             val new = S.Array.filter'__inline gcs (fn i => Array.sub(fs,i-c-1) = 0) is
+         in concat_array (ps0, new)
+         end
 
-val n = CommandLineArgs.parseInt "N" (100 * 1000 * 1000)
-val _ = print ("Generating primes up to " ^ Int.toString n ^ "\n")
-
-val endTiming = Timing.start "Generating primes"
-val result = primes n
+val endTiming = Timing.start "Calculating"
+val ps = primes N
 val () = endTiming()
 
-val numPrimes = Array.length result
-val _ = print ("Number of primes: " ^ Int.toString numPrimes ^ "\n")
+val () = print ("There are " ^ Int.toString (Array.length ps) ^
+                " primes below or equal to " ^ Int.toString N ^ "\n")
