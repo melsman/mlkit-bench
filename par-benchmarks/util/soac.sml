@@ -25,22 +25,32 @@ signature SOAC = sig
   val empty            : unit -> 'a arr
   val size             : 'a arr -> int
   val map              : ('a -> 'b) -> 'a arr -> 'b arr
+  val map2             : ('a * 'b -> 'c) -> 'a arr -> 'b arr -> 'c arr
+  val zip              : 'a arr -> 'b arr -> ('a * 'b) arr
   val repl             : int -> 'a -> 'a arr
   val iota             : int -> int arr
   val take             : int -> 'a arr -> 'a arr
   val drop             : int -> 'a arr -> 'a arr
   val split            : 'a arr -> 'a arr * 'a arr
 
-  val reduce           : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a
-  val reduce__inline   : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a
-
-  val scan             : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
-  val scan__inline     : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
-
   val toArray          : gcs -> 'a -> 'a arr -> 'a array
 (*  val toArray__inline  : gcs -> 'a -> 'a arr -> 'a array *)
   val memoize          : gcs -> 'a -> 'a arr -> 'a arr
   val fromArray        : 'a array -> 'a arr
+
+  (* reductions *)
+  val reduce           : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a
+  val reduce__inline   : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a
+
+  (* scans *)
+  val scan             : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
+  val scan__inline     : gcs -> ('a * 'a -> 'a) -> 'a -> 'a arr -> 'a array
+
+  val scan_pair__inline : gcs -> (('a*'b) * ('a*'b) -> 'a*'b) -> 'a*'b -> ('a*'b) arr -> 'a array * 'b array
+
+  val sgm_scan         : gcs -> ('a * 'a -> 'a) -> 'a -> (bool*'a) arr -> 'a arr
+  val sgm_scan__inline : gcs -> ('a * 'a -> 'a) -> 'a -> (bool*'a) arr -> 'a arr
+
 
   (* combinators for nested parallelism *)
   val ppar             : gcs -> (gcs -> 'a) * (gcs -> 'b) -> 'a * 'b
@@ -58,6 +68,12 @@ signature SOAC = sig
   val scan__noinline   : ('a arr * int * 'a array -> unit)
                          -> ('a array * int * 'a array * int * int -> unit)
                          -> gcs -> 'a -> 'a arr -> 'a array
+
+  val scan_pair__noinline : (('a*'b) arr * int * 'a array * 'b array -> unit)
+                         -> ('a array * 'b array * int * 'a array * 'b array * int * int -> unit)
+                         -> gcs -> 'a*'b -> ('a*'b) arr -> 'a array * 'b array
+
+
   val reduce__noinline : ('a arr -> 'a) -> gcs -> 'a -> 'a arr -> 'a
 
 (*
@@ -256,6 +272,89 @@ fun scan__inline (gcs:gcs) (g:'a*'a->'a) (b:'a) (arr:'a arr) : 'a array =
     end
 
 val scan = scan__inline
+
+fun map2 (f:'a * 'b -> 'c) ((a1,b1,f1):'a arr) ((a2,b2,f2):'b arr) : 'c arr =
+    if b1-a1 <> b2-a2 then raise Fail "map2"
+    else (a1,b1,fn i => f(f1 i,f2(i-a1+a2)))
+
+fun zip a b = map2 (fn x => x) a b
+
+fun scan_pair__noinline (seqScan: ('a*'b) arr * int * 'a array * 'b array -> unit)
+                        (seqDist: 'a array * 'b array * int * 'a array * 'b array * int * int -> unit)
+                        (gcs:gcs) ((a,b):'a*'b) (arr:('a*'b) arr) : 'a array * 'b array =
+    let val n = size arr
+        val tgta = allocate n a
+        val tgtb = allocate n b
+    in case parallel gcs n of
+           SEQ => (seqScan (arr, 0, tgta, tgtb); (tgta,tgtb))
+         | PAR {blks,blksz} =>
+           let val (P,_) = gcs
+               (* Sequentially scan each local block in parallel *)
+               val () = print "Computing local scans\n"
+               val () = parfor' (P,1) (0,blks)
+                                (fn i =>
+                                    let val off = i*blksz
+                                        val arr' = drop off arr |> take blksz
+                                    in seqScan (arr', off, tgta, tgtb)
+                                    end)
+               (* Scan of sums *)
+               val () = print "Scanning sums\n"
+               val sums : ('a*'b) arr =
+                   (0,blks,fn i => let val j = Int.min(n-1,(i+1)*blksz-1)
+                                   in (nth tgta j, nth tgtb j)
+                                   end)
+               val ssumsa : 'a array = allocate blks a
+               val ssumsb : 'b array = allocate blks b
+               val () = seqScan (sums, 0, ssumsa, ssumsb)
+               (* Distribute sums in each block *)
+               val () = print "Distribute sums\n"
+               val () = parfor' (P,1) (1,blks)
+                                (fn i => seqDist (ssumsa, ssumsb, blksz, tgta, tgtb, n, i))
+           in (tgta,tgtb)
+           end
+    end
+
+fun scan_pair__inline (gcs:gcs) (g:('a*'b)*('a*'b)->'a*'b) ((a,b):'a*'b) (arr:('a*'b) arr) : 'a array * 'b array =
+    let fun seqScan (arr:('a*'b) arr, tgt_offset:int, tgta:'a array, tgtb:'b array) : unit =
+            let val (lo,hi,f) = arr
+                val n = size arr
+                fun loop (a,b,i) =
+                    if i >= n then ()
+                    else let val (a1,b1) = f(lo+i)
+                             val (a2,b2) = g((a,b),(a1,b1))
+                         in upd tgta (tgt_offset+i) a2
+                          ; upd tgtb (tgt_offset+i) b2
+                          ; loop (a2,b2,i+1)
+                         end
+            in loop (a,b,0)
+            end
+        fun seqDist (ssumsa, ssumsb, blksz, tgta, tgtb, n, i) =
+            let val a = nth ssumsa (i-1)
+                val b = nth ssumsb (i-1)
+                fun loop (j,hi) =
+                    if j >= hi then ()
+                    else ( let val (a2,b2) = g((a,b),(nth tgta j, nth tgtb j))
+                           in upd tgta j a2 ; upd tgtb j b2
+                           end
+                         ; loop (j+1,hi)
+                         )
+            in loop (i*blksz,Int.min(n,(i+1)*blksz))
+            end
+    in scan_pair__noinline seqScan seqDist gcs (a,b) arr
+    end
+
+val scan_pair = scan_pair__inline
+
+fun sgm_scan__inline (gcs:gcs) (f:'a * 'a -> 'a) (ne:'a) (a:(bool*'a) arr) : 'a arr =
+    let fun g ((f1,x1),(f2,x2)) =
+            (f1 orelse f2,
+             if f2 then x2 else f(x1,x2))
+    in scan_pair__inline gcs g (false,ne) a
+            |> (fn (_,x) => x)
+            |> fromArray
+    end
+
+val sgm_scan = sgm_scan__inline
 
 fun reduce__noinline (seqRed: 'a arr -> 'a) (gcs:gcs) (b:'a) (arr:'a arr) : 'a =
     case parallel gcs (size arr) of
