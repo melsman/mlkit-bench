@@ -30,9 +30,12 @@ fun pmsort p [] : int list = []
   | pmsort p [x] = [x]
   | pmsort p xs =
     if p <= 1 then smsort xs
-    else merge(ForkJoin.pair (pmsort (p div 2),
-                              pmsort (p div 2))
-                             (split xs))
+    else let val q = p div 2
+             val (xs1,xs2) = split xs
+             val (xs1,xs2) = ForkJoin.par (fn () => pmsort q xs1,
+                                           fn () => pmsort q xs2)
+         in merge(xs1,xs2)
+         end
 
 fun rand (a,b) p = a + ((p+13) * 16807) mod (b-a)
 
