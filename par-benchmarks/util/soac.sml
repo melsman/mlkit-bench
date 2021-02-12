@@ -33,6 +33,7 @@ signature SOAC = sig
   val drop             : int -> 'a arr -> 'a arr
   val split            : 'a arr -> 'a arr * 'a arr
 
+  val app              : gcs -> ('a -> unit) -> 'a arr -> unit
   val toArray          : gcs -> 'a -> 'a arr -> 'a array
 (*  val toArray__inline  : gcs -> 'a -> 'a arr -> 'a array *)
   val memoize          : gcs -> 'a -> 'a arr -> 'a arr
@@ -50,7 +51,6 @@ signature SOAC = sig
 
   val sgm_scan         : gcs -> ('a * 'a -> 'a) -> 'a -> (bool*'a) arr -> 'a arr
   val sgm_scan__inline : gcs -> ('a * 'a -> 'a) -> 'a -> (bool*'a) arr -> 'a arr
-
 
   (* combinators for nested parallelism *)
   val ppar             : gcs -> (gcs -> 'a) * (gcs -> 'b) -> 'a * 'b
@@ -170,6 +170,11 @@ fun ppar (gcs:gcs) (f:gcs->'a,g:gcs->'b) : 'a * 'b =
 fun sequential ((P,G): gcs) (n:int) : bool =
     P <= 0 orelse n <= G
 
+fun app (gcs:gcs) (g: 'a -> unit) (arr:'a arr) : unit =
+    let val (lo,hi,f) = arr
+    in ForkJoin.parfor' gcs (lo,hi) (g o f)
+    end
+
 fun toArray gcs (b:'a) (arr:'a arr) : 'a array =
     let val n = size arr
     in if n = 0 then empty_array()
@@ -179,6 +184,7 @@ fun toArray gcs (b:'a) (arr:'a arr) : 'a array =
              ; result
             end
     end
+
 (*
 fun toArray__noinline doit (b:'a) gcs (lo,hi) : 'a array =
     let val n = hi-lo

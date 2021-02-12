@@ -16,4 +16,4 @@ MLKIT?=SML_LIB=~/gits/mlkit ~/gits/mlkit/bin/mlkit $(FLAGS)
 
 .PHONY: clean
 clean:
-	rm -rf MLB ../util/MLB *.exe *.exe.out.* *~ run
+	rm -rf MLB ../util/MLB *.exe *.exe.out.* *~ run *.png *.ppm
