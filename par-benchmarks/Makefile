@@ -1,5 +1,5 @@
 MLKIT_ROOT ?= ~/gits/mlkit
-BENCHFILES=primes/primes.mlb soac/sgm_scan.mlb soac/scan.mlb soac/filter.mlb fib/fib.mlb pmsort/pmsort.mlb ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb
+BENCHFILES=sobol/mcpi.sml mandelbrot/mandelbrot.mlb primes/primes.mlb soac/sgm_scan.mlb soac/scan.mlb soac/filter.mlb fib/fib.mlb pmsort/pmsort.mlb ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb
 MLKIT_BENCH=../src/mlkit-bench
 
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')

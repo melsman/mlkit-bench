@@ -1,0 +1,11 @@
+
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../util/CommandLineArgs.sml
+  ../util/Timing.sml
+  ../util/$(MLCOMP).mlb
+  ../util/soac.sml
+  sobol.mlb
+in
+  mcpi.sml
+end
