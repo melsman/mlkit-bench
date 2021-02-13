@@ -7,5 +7,5 @@ local
   ../util/soac.sml
   sobol.mlb
 in
-  mcpi.sml
+  soboloption.sml
 end
