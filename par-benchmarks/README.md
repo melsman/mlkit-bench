@@ -7,33 +7,42 @@ modified) on a MacBook Pro (15-inch, 2016) with a 2,7 GHz Quad-Core
 Intel Core i7 CPU:
 
 ```
- |            | MLton 20201023 | MLKitSeq      | MLKitPar - 1 Core | MLKitPar - 4 Cores |
- | Program    | real time (s)  | real time (s) | real time (s)     | real time (s)      |
- +------------+----------------+---------------+-------------------+--------------------+
- | fib        | 0.51 ±1.0%     | 0.51 ±3.0%    | 0.53 ±2.3%        | 0.11 ±0.0%         |
- | mandelbrot | 1.24 ±1.1%     | 1.32 ±2.4%    | 1.29 ±2.3%        | 0.35 ±2.0%         |
- | nqueens    | 1.35 ±3.0%     | 1.90 ±3.0%    | 1.88 ±2.2%        | 0.85 ±1.3%         |
- | pmsort     | 0.47 ±2.7%     | 0.21 ±11.2%   | 0.44 ±1.1%        | 0.14 ±3.1%         |
- | primes     | 0.90 ±1.2%     | 2.34 ±3.5%    | 2.32 ±2.2%        | 0.54 ±1.5%         |
- | ray-orig   | 4.40 ±5.2%     | 8.36 ±1.2%    | 17.48 ±1.3%       | 4.23 ±1.0%         |
- | ray        | 4.30 ±4.9%     | 2.54 ±3.4%    | 2.43 ±1.0%        | 0.55 ±0.0%         |
- | filter     | 0.31 ±2.2%     | 0.62 ±3.3%    | 0.55 ±1.8%        | 0.20 ±0.0%         |
- | scan       | 0.48 ±3.2%     | 0.82 ±10.4%   | 0.72 ±2.1%        | 0.22 ±3.3%         |
- | sgm_scan   | 0.11 ±3.0%     | 0.24 ±6.4%    | 0.24 ±2.1%        | 0.56 ±4.3%         |
- | mcpi       | 0.36 ±1.4%     | 0.90 ±2.1%    | 1.38 ±2.2%        | 0.27 ±1.8%         |
+ |             | MLton 20201023 | MLKitSeq      | MLKitPar - 1 Core | MLKitPar - 4 Cores |
+ | Program     | real time (s)  | real time (s) | real time (s)     | real time (s)      |
+ +-------------+----------------+---------------+-------------------+--------------------+
+ | fib         | 0.52 ±3.4%     | 0.49 ±1.1%    | 0.53 ±1.3%        | 0.11 ±0.0%         |
+ | mandelbrot  | 1.26 ±1.7%     | 1.24 ±0.9%    | 1.25 ±1.3%        | 0.36 ±7.0%         |
+ | nqueens     | 1.30 ±3.2%     | 1.83 ±0.9%    | 1.85 ±0.8%        | 0.89 ±0.8%         |
+ | pmsort      | 0.47 ±1.7%     | 0.19 ±0.0%    | 0.45 ±1.0%        | 0.15 ±3.4%         |
+ | primes      | 0.90 ±0.8%     | 2.23 ±0.9%    | 2.30 ±1.0%        | 0.55 ±1.2%         |
+ | ray-orig    | 3.87 ±0.5%     | 8.07 ±0.4%    | 17.08 ±0.8%       | 4.59 ±1.6%         |
+ | ray         | 3.93 ±0.6%     | 2.41 ±2.1%    | 2.46 ±1.7%        | 0.56 ±0.6%         |
+ | filter      | 0.31 ±1.6%     | 0.56 ±2.5%    | 0.57 ±1.8%        | 0.19 ±2.7%         |
+ | scan        | 0.47 ±2.4%     | 0.73 ±1.5%    | 0.76 ±1.2%        | 0.22 ±2.7%         |
+ | sgm_scan    | 0.11 ±4.4%     | 0.23 ±1.9%    | 0.24 ±1.4%        | 0.57 ±5.1%         |
+ | soboloption | 0.29 ±1.5%     | 0.55 ±1.3%    | 0.94 ±1.6%        | 0.25 ±8.1%         |
+ | sobolpi     | 0.44 ±1.1%     | 0.85 ±2.5%    | 1.39 ±2.3%        | 0.28 ±3.3%         |
 ```
 
 We need to investigate the overhead of the parallel runtime and the
 parallel generated code for the `pmsort` benchmark and the `ray-orig`
-benchmark.
+benchmark. These benchmarks allocate many small values in infinite
+regions (pairs, etc) and it turns out that the more involved
+allocation instruction sequence slows down these benchmarks. If we
+could somehow identify that a region is allocated into only by a
+single thread, we could choose the more efficient allocation
+instruction sequences for these regions. The `pmsort` benchmark, for
+instance, has the property that no region is allocated into by more
+than one thread.
 
-Please notice that some of the benchmarks (especially the `ray` benchmark)
-have been hand-optimised for running well with MLKit (`ray-orig` is
-Troels Henriksen's original version). In particular, for the `ray` benchmark,
-special blocks of unboxed reals are used for avoiding the construction
-of tuples of boxed reals. We see that MLton's whole-program
-optimisation techniques do not result in different execution times for
-the modified and the original version of the `ray` benchmark.
+Please notice that some of the benchmarks (especially the `ray`
+benchmark) have been hand-optimised for running well with MLKit
+(`ray-orig` is Troels Henriksen's original version). In particular,
+for the `ray` benchmark, special blocks of unboxed reals are used for
+avoiding the construction of tuples of boxed reals. We see that
+MLton's whole-program optimisation techniques do not result in
+different execution times for the modified and the original version of
+the `ray` benchmark.
 
 The `scan`, `filter`, and `sgm_scan` benchmarks make use of the
 `util/soac.sml` library, which implements a series of data-parallel
