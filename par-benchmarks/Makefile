@@ -29,9 +29,10 @@ version:
 
 .PHONY: press
 press: report-par.json
-	@../src/press/mlkit-bench-press -d real -d rss -skip1 \
+	@../src/press/mlkit-bench-press -sn -d real -d rss -skip1 \
            -merge_rows cname -c pname \
-           -c "real # MLTON [-mlb-path-var 'MLCOMP mlton']" \
-           -c 'real # MLKIT [MLCOMP=mlkit-seq -no_gc]' \
-           -c 'real # MLKIT [MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1]' \
-           -c 'real # MLKIT [MLCOMP=mlkit-par -no_gc -par]' $<
+           -c 'real # mlton' \
+           -c 'real # seq' \
+           -c 'real # par0' \
+           -c 'real # par' \
+           -c plen $<

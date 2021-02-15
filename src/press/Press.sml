@@ -15,12 +15,6 @@ type flags = {data:string list,         (* name of measurement data entry *)
               prune:string list,        (* program name to prune / eliminate *)
               columns:string list,      (* columns to include (all if empty) *)
               bflags:string list,       (* enabled boolean flags *)
-(*
-              skip1:bool,               (* skip first measurement *)
-              rsd:bool,                 (* include separate rsd columns *)
-              sd:bool,                  (* non-relative stddev *)
-              latex:bool,               (* latex output *)
-*)
               merge_rows:string option} (* merge rows with different provided column but same pname *)
 
 val flags0 : flags = {data=nil,cname=nil,cversion=nil,pname=nil,prune=nil,columns=nil,bflags=nil,merge_rows=NONE}
@@ -46,13 +40,14 @@ local
   fun enable_enabled f : (flags -> flags) * (flags -> bool) =
       (enable_bflag f, enabled_bflag f)
 in
-  val (enable_skip1, enabled_skip1) = enable_enabled "skip1"
-  val (enable_rsd, enabled_rsd) = enable_enabled "rsd"
-  val (enable_sd, enabled_sd) = enable_enabled "sd"
+  val (enable_skip1, enabled_skip1) = enable_enabled "skip1"                (* skip first measurement *)
+  val (enable_rsd, enabled_rsd) = enable_enabled "rsd"                      (* include separate rsd columns *)
+  val (enable_sd, enabled_sd) = enable_enabled "sd"                         (* non-relative stddev *)
   val (enable_M, enabled_M) = enable_enabled "M"
   val (enable_N, enabled_N) = enable_enabled "N"
-  val (enable_latex, enabled_latex) = enable_enabled "latex"
-  val (enable_gnuplot, enabled_gnuplot) = enable_enabled "gnuplot"
+  val (enable_latex, enabled_latex) = enable_enabled "latex"                (* latex output *)
+  val (enable_gnuplot, enabled_gnuplot) = enable_enabled "gnuplot"          (* gnuplot output *)
+  val (enable_shortnames, enabled_shortnames) = enable_enabled "shortnames" (* try to shorten program names *)
 end
 
 fun add_merge_rows ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string): flags =
@@ -87,6 +82,8 @@ fun getCompileArgs (nil, flags:flags) = NONE
          | "-N" => getCompileArgs(ss,enable_N flags)
          | "-latex" => getCompileArgs(ss,enable_latex flags)
          | "-gnuplot" => getCompileArgs(ss,enable_gnuplot flags)
+         | "-shortnames" => getCompileArgs(ss,enable_shortnames flags)
+         | "-sn" => getCompileArgs(ss,enable_shortnames flags)
          | "-merge_rows" => cont add_merge_rows ss
          | _ => SOME (sourceFiles(s::ss),flags)
     end
@@ -204,13 +201,25 @@ local fun getLines (json_str:string) : line list =
           else if enabled_latex flags then "\\mbox{\\tt " ^ s ^ "}"
           else s
 
+      fun strip_ext s =
+          case String.tokens (fn c => c = #".") s of
+              [f,"sml"] => f
+            | [f,"mlb"] => f
+            | _ => s
+
+      fun strip_dir s =
+          case rev(String.tokens (fn c => c = #"/") s) of
+              f :: _ => f
+            | _ => s
+
       fun pp_pname flags s =
-          if enabled_latex flags orelse enabled_gnuplot flags then
-            case String.tokens (fn c => c = #".") s of
-                [f,"sml"] => pp_tt flags f
-              | [f,"mlb"] => pp_tt flags f
-              | _ => s
-          else s
+          let val s = if enabled_shortnames flags then
+                        strip_dir(strip_ext s)
+                      else s
+          in if enabled_latex flags orelse enabled_gnuplot flags then
+               pp_tt flags (strip_ext s)
+             else s
+          end
 
       fun process (flags:flags) (line:line) : (string*string) list =
           let val runs = #runs line
@@ -229,7 +238,8 @@ local fun getLines (json_str:string) : line list =
                              real_to_string 0 v
                            else real_to_string 2 v
               val data = rev(#data flags)
-              val cols0 = [("cname",#cname line), ("cversion",#cversion line), ("pname",pp_pname flags(#pname line))]
+              val cols0 = [("cname",#cname line), ("cversion",#cversion line), ("pname",pp_pname flags(#pname line)),
+                           ("plen",Int.toString(#plen line))]
               val cols1 = List.map (fn d =>
                                        let val rs = List.map (select d) runs
                                        in case rs of
@@ -275,7 +285,12 @@ local fun getLines (json_str:string) : line list =
                 | collapse0 (r::rs) : row = expand r @ collapse0 rs
               fun collapse nil : row = nil
                 | collapse ((r::rs):table) = case find k r of
-                                                 SOME v => (k,v)::collapse0 (r::rs)
+                                                 SOME v =>
+                                                 let val res = collapse0 (r::rs)
+                                                 in case find "plen" r of
+                                                        SOME l => (k,v)::("plen", l)::res
+                                                      | NONE => (k,v)::res
+                                                 end
                                                | NONE => die ("groupToCols: no key " ^ k)
           in map collapse tables
           end
@@ -288,6 +303,10 @@ local fun getLines (json_str:string) : line list =
             | "MLKIT [-no_ri]" => "g"
             | "MLKIT [-no_ri -gengc]" => "G"
             | "MLTON" => "mlton"
+            | "MLTON [-mlb-path-var 'MLCOMP mlton']" => "mlton"
+            | "MLKIT [MLCOMP=mlkit-seq -no_gc]" => "seq"
+            | "MLKIT [MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1]" => "par0"
+            | "MLKIT [MLCOMP=mlkit-par -no_gc -par]" => "par"
             | _ => cn
 
       fun expands r cn nil = nil
@@ -348,7 +367,7 @@ fun main (progname, args) =
 	    ; print "  -cname s        : Filter cname s.\n"
 	    ; print "  -cversion s     : Filter cversion s.\n"
 	    ; print "  -data s, -d s   : s in {data,exe,real,rss,size,stk,sys,user,gc,majgc,gcn,majgcn}.\n"
-            ; print "  -column c, -c c : Include column c.\n"
+            ; print "  -column c,-c c  : Include column c.\n"
             ; print "  -skip1          : Skip the first measument.\n"
             ; print "  -rsd            : Separate columns for relative stddev.\n"
             ; print "  -sd             : Report non-relative stddev.\n"
@@ -356,6 +375,7 @@ fun main (progname, args) =
             ; print "  -N              : Report counts without decimal places.\n"
             ; print "  -latex          : Output LaTeX.\n"
             ; print "  -merge_rows c   : Merge rows with same pname and different c's.\n"
+            ; print "  -shortnames,-sn : Try to shorten program names.\n"
 	    ; print "\n"
 	    ; print "FILES:\n"
 	    ; print "  file.json    : Json file.\n"
