@@ -57,7 +57,7 @@ fun chk (x::(ys as y::xs)) = if x<=y then chk ys else "ERR: result not sorted\n"
 in
 
 val N = CommandLineArgs.parseInt "N" 500000
-val P = CommandLineArgs.parseInt "P" 8
+val P = CommandLineArgs.parseInt "P" 40
 val () =
     let val () = print ("Generating input of size " ^ Int.toString N ^ "...\n")
         val xs = randlist (10,10000) N 0
