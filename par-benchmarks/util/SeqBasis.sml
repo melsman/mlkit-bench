@@ -30,7 +30,6 @@ sig
          -> 'a array  (* length N+1, for both inclusive and exclusive scan *)
 
   val filter: grain
-           -> 'a
            -> (int * int)
            -> (int -> 'a)
            -> (int -> bool)
@@ -69,8 +68,11 @@ struct
     in
       if n = 0 then A.fromList [] else
       let
-          val result = allocate n (f 0)
+        val v = f 0
+        val result = allocate n v
       in
+        upd result 0 v;
+
         if lo = 0 then
           parfor grain (1, n) (fn i => upd result i (f i))
         else
@@ -144,7 +146,7 @@ struct
         result
       end
 
-  fun filter (grain:int) (b:'a) (lo:int, hi:int) (f:int->'a) (g:int->bool) : 'a array =
+  fun filter (grain:int) (lo:int, hi:int) (f:int->'a) (g:int->bool) : 'a array =
     let
       val n = hi - lo
       val k = grain
@@ -158,7 +160,9 @@ struct
         in count (start, Int.min (start+k, hi), 0)
         end)
       val offsets = scan grain op+ 0 (0, m) (nth counts)
-      val result = allocate (nth offsets m) b
+      val result = if nth offsets m = 0
+                   then A.fromList []
+                   else allocate (nth offsets m) (f 0)
       fun filterSeq (i, j, c) =
         if i >= j then ()
         else if g i then (upd result c (f i); filterSeq (i+1, j, c+1))
