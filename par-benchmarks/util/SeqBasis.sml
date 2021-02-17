@@ -7,7 +7,7 @@ structure SeqBasis:
 sig
   type grain = int
 
-  val tabulate: grain -> 'a -> (int * int) -> (int -> 'a) -> 'a array
+  val tabulate: grain -> (int * int) -> (int -> 'a) -> 'a array
 
   val foldl: ('b * 'a -> 'b)
           -> 'b
@@ -63,17 +63,21 @@ struct
   val par = ForkJoin.par
   val allocate = ForkJoin.alloc
 
-  fun tabulate (grain:grain) (b:'a) (lo:int, hi:int) (f:int->'a) : 'a array =
+  fun tabulate (grain:grain) (lo:int, hi:int) (f:int->'a) : 'a array =
     let
       val n = hi-lo
-      val result = allocate n b
     in
-      if lo = 0 then
-        parfor grain (0, n) (fn i => upd result i (f i))
-      else
-        parfor grain (0, n) (fn i => upd result i (f (lo+i)));
+      if n = 0 then A.fromList [] else
+      let
+          val result = allocate n (f 0)
+      in
+        if lo = 0 then
+          parfor grain (1, n) (fn i => upd result i (f i))
+        else
+          parfor grain (1, n) (fn i => upd result i (f (lo+i)));
 
-      result
+        result
+      end
     end
 
   fun foldl g b (lo, hi) f =
@@ -121,7 +125,7 @@ struct
         val n = hi - lo
         val k = grain
         val m = 1 + (n-1) div k (* number of blocks *)
-        val sums = tabulate (m+1) b (0, m) (fn i =>
+        val sums = tabulate (m+1) (0, m) (fn i =>
           let val start = lo + i*k
           in foldl g b (start, Int.min (start+k, hi)) f
           end)
@@ -149,7 +153,7 @@ struct
         if i >= j then c
         else if g i then count (i+1, j, c+1)
         else count (i+1, j, c)
-      val counts = tabulate 1 0 (0, m) (fn i =>
+      val counts = tabulate 1 (0, m) (fn i =>
         let val start = lo + i*k
         in count (start, Int.min (start+k, hi), 0)
         end)
@@ -176,7 +180,7 @@ struct
         if i >= j then c
         else if g i then count (i+1, j, c+1)
         else count (i+1, j, c)
-      val counts = tabulate 1 0 (0, m) (fn i =>
+      val counts = tabulate 1 (0, m) (fn i =>
         let val start = lo + i*k
         in count (start, Int.min (start+k, hi), 0)
         end)
