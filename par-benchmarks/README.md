@@ -10,18 +10,19 @@ Intel Core i7 CPU:
  |             | MLton 20201023 | MLKitSeq      | MLKitPar - 1 Core | MLKitPar - 4 Cores | Prog |
  | Program     | real time (s)  | real time (s) | real time (s)     | real time (s)      | len  |
  +-------------+----------------+---------------+-------------------+--------------------+------+
- | fib         | 0.52 ±3.4%     | 0.49 ±1.1%    | 0.53 ±1.3%        | 0.11 ±0.0%         | 132  |
- | mandelbrot  | 1.26 ±1.7%     | 1.24 ±0.9%    | 1.25 ±1.3%        | 0.36 ±7.0%         | 319  |
- | nqueens     | 1.30 ±3.2%     | 1.83 ±0.9%    | 1.85 ±0.8%        | 0.89 ±0.8%         | 212  |
- | pmsort      | 0.47 ±1.7%     | 0.19 ±0.0%    | 0.45 ±1.0%        | 0.15 ±3.4%         | 178  |
- | primes      | 0.90 ±0.8%     | 2.23 ±0.9%    | 2.30 ±1.0%        | 0.55 ±1.2%         | 580  |
- | ray-orig    | 3.87 ±0.5%     | 8.07 ±0.4%    | 17.08 ±0.8%       | 4.59 ±1.6%         | 547  |
- | ray         | 3.93 ±0.6%     | 2.41 ±2.1%    | 2.46 ±1.7%        | 0.56 ±0.6%         | 614  |
- | filter      | 0.31 ±1.6%     | 0.56 ±2.5%    | 0.57 ±1.8%        | 0.19 ±2.7%         | 559  |
- | scan        | 0.47 ±2.4%     | 0.73 ±1.5%    | 0.76 ±1.2%        | 0.22 ±2.7%         | 562  |
- | sgm_scan    | 0.11 ±4.4%     | 0.23 ±1.9%    | 0.24 ±1.4%        | 0.57 ±5.1%         | 559  |
- | soboloption | 0.29 ±1.5%     | 0.55 ±1.3%    | 0.94 ±1.6%        | 0.25 ±8.1%         | 882  |
- | sobolpi     | 0.44 ±1.1%     | 0.85 ±2.5%    | 1.39 ±2.3%        | 0.28 ±3.3%         | 850  |
+ | fib         | 0.55 ±2.6%     | 0.51 ±2.0%    | 0.51 ±1.7%        | 0.12 ±4.3%         | 132  |
+ | mandelbrot  | 1.34 ±0.4%     | 1.38 ±6.4%    | 1.29 ±1.6%        | 0.36 ±5.2%         | 319  |
+ | nqueens     | 1.38 ±0.4%     | 1.76 ±2.8%    | 2.03 ±2.1%        | 0.89 ±1.1%         | 212  |
+ | pmsort      | 0.51 ±3.1%     | 0.19 ±0.0%    | 0.45 ±1.7%        | 0.16 ±2.8%         | 178  |
+ | primes      | 0.97 ±0.5%     | 2.20 ±2.8%    | 2.47 ±2.6%        | 0.50 ±1.4%         | 584  |
+ | ray-orig    | 4.20 ±0.4%     | 8.76 ±1.1%    | 18.28 ±1.1%       | 4.77 ±1.9%         | 547  |
+ | ray         | 4.28 ±0.7%     | 2.56 ±2.9%    | 2.48 ±1.5%        | 0.62 ±9.1%         | 614  |
+ | filter      | 0.33 ±4.3%     | 0.61 ±7.6%    | 0.56 ±0.8%        | 0.22 ±5.6%         | 563  |
+ | scan        | 0.47 ±2.5%     | 0.74 ±5.6%    | 0.72 ±1.2%        | 0.22 ±4.1%         | 566  |
+ | sgm_scan    | 0.13 ±4.2%     | 0.23 ±2.2%    | 0.25 ±2.7%        | 0.56 ±4.5%         | 563  |
+ | soboloption | 0.31 ±2.3%     | 0.57 ±1.7%    | 0.94 ±1.3%        | 0.22 ±4.7%         | 889  |
+ | sobolpi     | 0.54 ±1.6%     | 0.99 ±5.9%    | 1.29 ±1.2%        | 0.31 ±2.5%         | 854  |
+ | vpmsort     | 0.27 ±5.2%     | 0.32 ±1.6%    | 0.39 ±1.1%        | 0.17 ±3.2%         | 198  |
 ```
 
 We need to investigate the overhead of the parallel runtime and the
@@ -33,7 +34,42 @@ could somehow identify that a region is allocated into only by a
 single thread, we could choose the more efficient allocation
 instruction sequences for these regions. The `pmsort` benchmark, for
 instance, has the property that no region is allocated into by more
-than one thread.
+than one thread. Here is a comparison of using the unsafe allocation
+strategy for the `pmsort` benchmark compared to the safe version:
+
+```
+ |             | MLton 20201023 | MLKitSeq      | MLKitPar - 1 Core | MLKitPar - 4 Cores | MLKitPar0 - 1 Core | MLKitPar0 - 4 Cores |
+ | Program     | real time (s)  | real time (s) | real time (s)     | real time (s)      | real time (s)      | real time (s)       |
+ +-------------+----------------+---------------+-------------------+--------------------+--------------------+---------------------+
+ | pmsort 1M   | 1.0288         | 0.8965        | 0.9380            | 0.2850             | 0.5223             | 0.1847              |
+```
+
+Here are the executions:
+
+```
+$ cd pmsort
+$ make clean pmsort-mlton.exe pmsort-seq.exe pmsort-par.exe pmsort-par0.exe
+
+$ ./pmsort-mlton.exe -N 1000000 --t         # MLTON
+[Sorting: Finished in 1.0288s]
+
+$ ./pmsort-seq.exe -N 1000000 --t           # SEQ
+[Sorting: Finished in 0.9280s]
+
+$ ./pmsort-par.exe -N 1000000 --t -P 0      # PAR 1-core
+[Sorting: Finished in 0.9380s]
+
+$ ./pmsort-par.exe -N 1000000 --t           # PAR 4-cores
+[Sorting: Finished in 0.2850s]
+
+$ ./pmsort-par0.exe -N 1000000 --t -P 0     # PAR0 1-core
+[Sorting: Finished in 0.5223s]
+
+$ ./pmsort-par0.exe -N 1000000 --t          # PAR0 4-core
+[Sorting: Finished in 0.1847s]
+```
+
+There seems to be something wrong with the `SEQ` version...
 
 Please notice that some of the benchmarks (especially the `ray`
 benchmark) have been hand-optimised for running well with MLKit
