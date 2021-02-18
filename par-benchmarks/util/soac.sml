@@ -74,7 +74,7 @@ signature SOAC = sig
                          -> gcs -> 'a*'b -> ('a*'b) arr -> 'a array * 'b array
 
 
-  val reduce__noinline : ('a arr -> 'a) -> gcs -> 'a -> 'a arr -> 'a
+  val reduce__noinline : (int * int -> 'a) -> ('a array -> 'a) -> gcs -> 'a -> int -> int -> 'a
 
 (*
   val toArray__noinline : ('a array -> int*int -> unit) -> 'a -> gcs -> int*int -> 'a array
@@ -362,24 +362,28 @@ fun sgm_scan__inline (gcs:gcs) (f:'a * 'a -> 'a) (ne:'a) (a:(bool*'a) arr) : 'a 
 
 val sgm_scan = sgm_scan__inline
 
-fun reduce__noinline (seqRed: 'a arr -> 'a) (gcs:gcs) (b:'a) (arr:'a arr) : 'a =
-    case parallel gcs (size arr) of
-        SEQ => seqRed arr
+fun reduce__noinline (seqRed: int * int -> 'a) (arrRed: 'a array -> 'a) (gcs:gcs) (b:'a) (lo:int) (hi:int) : 'a =
+    case parallel gcs (hi-lo) of
+        SEQ => seqRed (lo,hi)
       | PAR {blks,blksz} =>
         let val (P,_) = gcs
             val sums = allocate blks b
             val () = parfor' (P,1) (0,blks)
-                             (fn i => drop (i*blksz) arr |>
-                                           take blksz |>
-                                           seqRed |>
-                                           upd sums i)
-        in seqRed (0,blks,nth sums)
+                             (fn i => let val lo = lo+i*blksz
+                                          val hi = Int.min(lo+blksz,hi)
+                                      in seqRed (lo,hi) |>
+                                         upd sums i
+                                      end)
+        in arrRed sums
         end
 
 fun reduce__inline (gcs:gcs) (g:'a*'a->'a) (b:'a) (arr:'a arr) : 'a =
-    let fun seqRed (arr:'a arr) : 'a = foldl g b arr
-    in reduce__noinline seqRed gcs b arr
+    let val (lo,hi,f) = arr
+        fun seqRed (lo:int,hi:int) : 'a = g(b,foldl g b (lo,hi,f))
+        fun arrRed (a:'a array) : 'a = g(b,Array.foldl g b a)
+    in reduce__noinline seqRed arrRed gcs b lo hi
     end
+
 
 val reduce = reduce__inline
 
