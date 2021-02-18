@@ -1,0 +1,21 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  $(SML_LIB)/basis/WordN.sml
+  ../util/CommandLineArgs.sml
+  ../util/Timing.sml
+  ../util/$(MLCOMP).mlb
+  ../util/SeqBasis.sml
+  ../util/Seq.sml
+  ../util/Util.sml
+  ../util/Color.sml
+  ../util/Parse.sml
+  ../util/Tokenize.sml
+  ../util/ReadFile.sml
+  ../util/PPM.sml
+  ../util/ExtraBinIO.sml
+  ../util/GIF.sml
+in
+  VerticalSeamIndexMap.sml
+  SCI.sml
+  main.sml
+end
