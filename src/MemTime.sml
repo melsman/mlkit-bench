@@ -125,7 +125,7 @@ sys          0.02
                               | NONE => "time.out"
               val args = String.concatWith " " args
               val command = cmd ^ " " ^ args ^ " > " ^ out_file
-              val command2 = "/usr/bin/time -lp " ^ command ^ " 2> " ^ timeout
+              val command2 = "/usr/bin/env time -lp " ^ command ^ " 2> " ^ timeout
               val () = OS.FileSys.remove timeout handle _ => ()
               val () = SysUtil.system command2 handle _ => SysUtil.error "Failed to execute command"
               val s = readAll timeout handle _ => SysUtil.error "Failed to read output file"
@@ -220,7 +220,7 @@ sys          0.02
                             | NONE => "time.out"
             val args = String.concatWith " " args
             val command = cmd ^ " " ^ args ^ " > " ^ out_file
-            val command2 = "/usr/bin/time -v " ^ command ^ " 2> " ^ timeout
+            val command2 = "/usr/bin/env time -v " ^ command ^ " 2> " ^ timeout
             val () = OS.FileSys.remove timeout handle _ => ()
             val () = SysUtil.system command2
                      handle _ => SysUtil.error ("Failed to execute command '" ^ command2 ^ "'")
