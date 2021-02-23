@@ -1,0 +1,9 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  $(SML_LIB)/basis/fork-join.mlb
+  $(SML_LIB)/basis/mpl.mlb
+  $(SML_LIB)/basis/build/sources.mlb
+in real64_blocks0.mlb
+   FORK_JOIN.sig
+   ForkJoinMPL.sml
+end

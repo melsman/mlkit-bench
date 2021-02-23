@@ -5,6 +5,7 @@ MLKIT_BENCH=../src/mlkit-bench
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')
 TODAY=$(shell date "+%Y-%m-%d")
 MACHINE_TAG ?= MacBookPro2016
+MPL_PROCS=8
 
 .PHONY: all
 all: report-par.json
@@ -13,6 +14,7 @@ all: report-par.json
 report-par.json:
 	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -n 10 -o $@ \
           -mlton:-mlb-path-var \'MLCOMP mlton\': \
+          -mpl:-mlb-path-var \'MLCOMP mpl\' -runtime procs -runtime $(MPL_PROCS): \
           -mlkit:MLCOMP=mlkit-seq -no_gc: \
           -mlkit:MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1: \
           -mlkit:MLCOMP=mlkit-par -no_gc -par: $(BENCHFILES)
@@ -32,6 +34,7 @@ press: report-par.json
 	@../src/press/mlkit-bench-press -sn -d real -d rss -skip1 \
            -merge_rows cname -c pname \
            -c 'real # mlton' \
+           -c 'real # mpl' \
            -c 'real # seq' \
            -c 'real # par0' \
            -c 'real # par' \

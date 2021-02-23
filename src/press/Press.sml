@@ -307,7 +307,10 @@ local fun getLines (json_str:string) : line list =
             | "MLKIT [MLCOMP=mlkit-seq -no_gc]" => "seq"
             | "MLKIT [MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1]" => "par0"
             | "MLKIT [MLCOMP=mlkit-par -no_gc -par]" => "par"
-            | _ => cn
+            | _ =>
+              if String.isPrefix "MPL" cn
+              then "mpl"
+              else cn
 
       fun expands r cn nil = nil
         | expands r cn (k::ks) =

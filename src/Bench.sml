@@ -1,13 +1,14 @@
 
 structure Bench = struct
 
-datatype compiler = MLKIT of string | MLTON of string
+datatype compiler = MLKIT of string | MLTON of string | MPL of string
 fun pr_compiler (c:compiler): string =
     let fun with_flags "" s = s
 	  | with_flags flags s = s ^ " [" ^ flags ^ "]"
     in case c of
            MLKIT flags => with_flags flags "MLKIT"
          | MLTON flags => with_flags flags "MLTON"
+         | MPL flags => with_flags flags "MPL"
     end
 
 
@@ -85,6 +86,10 @@ fun getCompileArgs (nil, comps, out) = NONE
 	(case readFlags ss of
              SOME (flags,ss) => getCompileArgs (ss, MLTON flags::comps, out)
 	   | NONE => getCompileArgs (ss, MLTON "" :: comps, out))
+      | "-mpl"   =>
+	(case readFlags ss of
+             SOME (flags,ss) => getCompileArgs (ss, MPL flags::comps, out)
+	   | NONE => getCompileArgs (ss, MPL "" :: comps, out))
       | "-o" =>
 	(case ss of
              f::ss => getCompileArgs (ss, comps, SOME f)
@@ -120,6 +125,8 @@ fun getNameComp c =
                            flags=flags, cversion=CompileMLKIT.version()}
 	 | MLTON flags => {head=head, compile=CompileMLTON.compile,
                            flags=flags, cversion=CompileMLTON.version()}
+	 | MPL flags => {head=head, compile=CompileMPL.compile,
+                         flags=flags, cversion=CompileMPL.version()}
     end
 
 fun sourceFiles nil = nil
@@ -283,10 +290,11 @@ fun main (progname, args) =
 	   (  print "USAGE: mlkit-bench [OPTION]... FILE...\n"
 	    ; print "OPTIONS:\n"
 	    ; print "  -mlton[:FLAG ... FLAG:]  Run MLTON on each test.\n"
+	    ; print "  -mpl[:FLAG ... FLAG:]    Run MPL on each test.\n"
 	    ; print "  -mlkit[:FLAG ... FLAG:]  Run MLKIT on each test.\n"
 	    ; print "  -o file                  Write json output to `file`.\n"
             ; print "  -n n                     Set number of repetitions to n.\n"
-            ; print "FLAG options to -mlton and -mlkit are passed to\n"
+            ; print "FLAG options to -mlton, -mpl, and -mlkit are passed to\n"
 	    ; print "  the compiler, with the exceptions of a flag of the form\n"
             ; print "  K=V, which sets the environment variable K to V during\n"
             ; print "  compilation and during execution.\n"
@@ -304,7 +312,7 @@ fun main (progname, args) =
 	    ; print "ENVIRONMENT:\n"
             ; print "  mlkit-bench makes use of the environment variable MLKIT_ROOT\n"
             ; print "  to locate the MLKit compiler and standard library. For use\n"
-            ; print "  with mlton, mlkit-bench assumes the mlton executable is\n"
+            ; print "  with mlton and mpl, mlkit-bench assumes the mlton executables are\n"
             ; print "  installed on the system.\n"
 	    ; OS.Process.failure)
 	 | SOME (inputs, cs, out) =>
