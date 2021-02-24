@@ -150,10 +150,7 @@ fun mk_bvh f all_objs =
                 val xs_right = List.drop(xs_sorted, n div 2)
                 fun do_left () = mk (d+1) (n div 2) xs_left
                 fun do_right () = mk (d+1) (n-(n div 2)) xs_right
-                val (left, right) =
-                    if n < 200
-                    then (do_left(), do_right())
-                    else ForkJoinSeq.par (do_left, do_right)
+                val (left, right) = (do_left(), do_right())
                 val box = enclosing (bvh_aabb left) (bvh_aabb right)
             in bvh_split (box, left, right) end
     in mk 0 (length all_objs) all_objs end

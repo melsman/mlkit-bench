@@ -17,5 +17,3 @@ fun alloc n v = Array.tabulate(n,fn _ => v)
 type gcs = int * int
 fun parfor' _ = parfor 0
 end
-
-structure ForkJoinSeq = ForkJoin
