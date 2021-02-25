@@ -49,7 +49,7 @@ fun process (compile: string -> string option * Time.time) (p:string)
     case compile p of
         (SOME t,ctime) =>
 	let val out = t ^ ".out.1"  (* memo: we could check every invocation *)
-            val cmd = "./" ^ t
+            val cmd = t
 	    val res = (t, ctime,
                        exec_n (!repetitions)
                               {out_file=fn i => t ^ ".out." ^ Int.toString i,

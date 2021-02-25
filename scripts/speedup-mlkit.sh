@@ -2,7 +2,7 @@
 
 set -e
 
-source ./speedup.config
+source $(dirname $0)/speedup.config
 
 baseline=baseline-mlkit.json
 speedups=mlkit.data
@@ -12,7 +12,7 @@ cores_json() {
 }
 
 measure_baseline() {
-    $bench -o $baseline -mlkit:MLCOMP=mlkit-seq -no_gc: $benchmarks
+    $bench -o $baseline -mlkit:MLCOMP=mlkit-seq -no_gc: $(benchmarks)
 }
 
 measure_parallel() {
@@ -20,7 +20,7 @@ measure_parallel() {
         restrict() {
             taskset -c 0-$((c-1)) "$@"
         }
-        restrict $bench -o $(cores_json $c) -mlkit:MLCOMP=mlkit-par -no_gc -par: $benchmarks
+        restrict $bench -o $(cores_json $c) -mlkit:MLCOMP=mlkit-par -no_gc -par: $(benchmarks)
     done
 }
 
@@ -30,11 +30,11 @@ compute_speedups() {
             echo "-$c" $(cores_json $c)
         done
     }
-    $speedup -baseline $baseline $(json_args) $benchmarks > $speedups
+    $speedup -baseline $baseline $(json_args) $(benchmarks) > $speedups
 }
 
 plot_speedups() {
-    gnuplot -e "$(gnuplot_prelude "mlkit" $speedups)" -d speedup.gnu
+    gnuplot -e "$(gnuplot_prelude "mlkit" $speedups)" -d $BENCH_ROOT/scripts/speedup.gnu
 }
 
 measure_baseline
