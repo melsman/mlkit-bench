@@ -1,7 +1,7 @@
 #!/bin/sh
 #PBS -W group_list=ku_00054 -A ku_00054
 #PBS -N mlkit-bench
-#PBS -l walltime=00:60:00
+#PBS -l walltime=01:30:00
 #PBS -l nodes=1:ppn=40,gpus=0
 #PBS -l mem=64g
 
@@ -11,8 +11,8 @@
 #
 # (If run without -d it'll make a mess in your home directory.)
 #
-# NOTE: because I am lazy, mlkit-par0 will expect the mlkit baseline
-# measurement to already exist.  Run the plain 'mlkit' compiler first.
+# WARNING: don't run the different jobs in the same working directory,
+# because their 'time.out' intermediate files will clash...
 
 set -e
 
