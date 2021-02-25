@@ -1,0 +1,8 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../charting/lib/github.com/diku-dk/sml-sort/listsort.mlb
+  ../charting/data.mlb          (* shared types with charting web-app *)
+  ../fileutil.mlb
+in
+  Speedup.sml
+end
