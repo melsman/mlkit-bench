@@ -108,7 +108,8 @@ sys          0.02
               SOME l => (case Real.fromString l of
                              SOME v => v
                            | NONE => raise Fail ("lookR: cannot read real in line '" ^ l ^ "'"))
-            | NONE => raise Fail ("lookR: cannot find line with string '" ^ s ^ "'")
+            | NONE => raise Fail ("lookR: cannot find line with string '" ^ s ^ "' in output:" ^
+                                 String.concatWith "\n" lines)
       fun lookL lines s =
           case List.find (String.isPrefix s) lines of
               SOME l =>
@@ -182,7 +183,8 @@ sys          0.02
       fun findLine lines s : string =
           case List.find (String.isSubstring s) lines of
               SOME l => l
-            | NONE => raise Fail ("findLine: cannot find line with string '" ^ s ^ "'")
+            | NONE => raise Fail ("findLine: cannot find line with string '" ^ s ^ "' in output" ^
+                                  String.concatWith "\n" lines)
 
       fun look lines s : real =
           let val l = findLine lines s

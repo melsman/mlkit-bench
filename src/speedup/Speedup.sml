@@ -50,14 +50,42 @@ fun getBenchLine bench [] = raise Fail ("Missing data for benchmark: " ^ bench)
 fun meanrun (l: line) =
     foldl op+ 0.0 (map #real (#runs l)) / real (length (#runs l))
 
-fun process benchmarks (baselines: line list) (n, measurements: line list) : string =
-    let fun process1 benchmark =
-            let val x = getBenchLine benchmark baselines
-                val y = getBenchLine benchmark measurements
-            in Real.toString (meanrun x / meanrun y)
-            end
+fun speedupOf (benchmark: string) (baselines: line list) (measurements: line list) : real =
+    let val x = getBenchLine benchmark baselines
+        val y = getBenchLine benchmark measurements
+    in meanrun x / meanrun y
+    end
+
+fun process (benchmarks: string list) (baselines: line list) (n, measurements: line list) : string =
+    let fun process1 benchmark = Real.toString (speedupOf benchmark baselines measurements)
     in String.concatWith " "  (Int.toString n :: map process1 benchmarks) ^ "\n"
     end
+
+  local
+    fun merge cmp ([], ys) = ys
+      | merge cmp (xs, []) = xs
+      | merge cmp (xs as x::xs', ys as y::ys') =
+          case cmp (x, y) of
+               GREATER => y :: merge cmp (xs, ys')
+             | _       => x :: merge cmp (xs', ys)
+    fun sort cmp [] = []
+      | sort cmp [x] = [x]
+      | sort cmp xs =
+        let
+          val ys = List.take (xs, length xs div 2)
+          val zs = List.drop (xs, length xs div 2)
+        in
+          merge cmp (sort cmp ys, sort cmp zs)
+        end
+    fun lastSpeedup benchmark baselines (measurements: (int * line list) list) : real =
+        speedupOf benchmark baselines (#2 (List.last measurements))
+  in
+    fun sortBenchmarks benchmarks baselines measurements =
+        let fun cmp ((_, x), (_, y)) = Real.compare (x, y)
+        in
+          (rev o map #1 o sort cmp o map (fn b => (b, lastSpeedup b baselines measurements))) benchmarks
+        end
+  end
 in
 
 fun main (progname, args) =
@@ -65,10 +93,12 @@ fun main (progname, args) =
     in case getCompileArgs (args, settings0) of
 	   SOME (benchmarks, {jsons, baseline=SOME baseline}) =>
  	   let val measurements =
-                   rev ((List.map (fn (n,f) => (n, getLines (FileUtil.readFile f)))
-                                  jsons))
+                   List.map (fn (n,f) => (n, getLines (FileUtil.readFile f))) (rev jsons)
                val baselines = getLines (FileUtil.readFile baseline)
-           in print(String.concat (map (process benchmarks baselines) measurements));
+               val benchName = OS.Path.base o OS.Path.file
+               val benchmarks = sortBenchmarks benchmarks baselines measurements
+           in print(String.concatWith " " ("n" :: map benchName benchmarks) ^ "\n");
+              print(String.concat (map (process benchmarks baselines) measurements));
 	      OS.Process.success
 	   end
          | _ =>
