@@ -77,7 +77,7 @@ fun chk (a:int array) (i:int)=
 in
 
 val N = CommandLineArgs.parseInt "N" 1000000
-val P = CommandLineArgs.parseInt "P" 40
+val P = CommandLineArgs.parseInt "P" 50
 val () =
     let val () = print ("Generating input of size " ^ Int.toString N ^ "...\n")
         val v = randArr (10,10000) N

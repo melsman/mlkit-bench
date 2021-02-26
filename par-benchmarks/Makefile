@@ -22,7 +22,7 @@ report-par.json:
 .PHONY: clean
 clean:
 	rm -rf MLB *~ *.exe.out.* *.exe time.out report-par.json *.auto.mlb
-	rm -rf */MLB */*~ */run */*.ppm */*.exe*
+	rm -rf */MLB */*~ */run ray/*.ppm ray-orig/*.ppm */*.exe*
 
 .PHONY: version
 version:

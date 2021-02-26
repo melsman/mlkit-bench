@@ -61,7 +61,7 @@ fun invCumNormDist p =
 (* granularity control specification *)
 
 val gcs : S.gcs =
-    (CommandLineArgs.parseInt "P" 40,
+    (CommandLineArgs.parseInt "P" 50,
      CommandLineArgs.parseInt "G" 10000)
 
 val N = CommandLineArgs.parseInt "N" 1000000

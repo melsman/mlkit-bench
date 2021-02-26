@@ -173,7 +173,7 @@ fun image2ppm6 out ({data, height, width}: image) =
     end
 
 val gcs : ForkJoin.gcs =
-    (CommandLineArgs.parseInt "P" 40,
+    (CommandLineArgs.parseInt "P" 50,
      CommandLineArgs.parseInt "G" 10)
 
 fun for (lo,hi) (f:int->unit) : unit =

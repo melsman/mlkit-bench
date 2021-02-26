@@ -2,8 +2,8 @@
 structure S = SOAC
 
 val gcs : S.gcs =
-    (CommandLineArgs.parseInt "P" 10,
-     CommandLineArgs.parseInt "G" 100000)
+    (CommandLineArgs.parseInt "P" 50,
+     CommandLineArgs.parseInt "G" 50000)
 
 val N = CommandLineArgs.parseInt "N" 5000000
 
