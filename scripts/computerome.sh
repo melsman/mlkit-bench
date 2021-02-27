@@ -17,7 +17,7 @@
 set -e
 
 basedir=/home/projects/ku_00054/data/gits
-cores=40
+cores=20
 
 export BENCH_ROOT=$basedir/mlkit-bench
 export MLKIT_ROOT=$basedir/mlkit

@@ -4,8 +4,8 @@
  *)
 
 local
-val grain  = CommandLineArgs.parseInt "G" 30    (* -G n *)
-val N      = CommandLineArgs.parseInt "N" 39    (* -N n *)
+val grain  = CommandLineArgs.parseInt "G" 37    (* -G n *)
+val N      = CommandLineArgs.parseInt "N" 46    (* -N n *)
 
 fun sfib n =
   if n <= 1 then n else sfib (n-1) + sfib (n-2)

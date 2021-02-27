@@ -4,6 +4,9 @@ set -e
 
 source $(dirname $0)/speedup.config
 
+# Only a few benchmarks actually work with par0.
+benchmarks="mandelbrot/mandelbrot.mlb fib/fib.mlb vpmsort/vpmsort.mlb pmsort/pmsort.mlb"
+
 baseline=baseline-mlkit.json
 speedups=mlkit-par0.data
 
