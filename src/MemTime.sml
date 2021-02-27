@@ -163,7 +163,8 @@ sys          0.02
 	      real=real,
               gc=gc,gcn=gcn,majgc=majgc,majgcn=majgcn}
           end
-      fun getRss_macos lines = Real.floor (lookR lines "maximum resident set size")
+      fun getRss_macos lines =
+          Real.floor (lookR lines "maximum resident set size") div 1000
       val cmd_prefix_macos = "/usr/bin/env time -lp "
     end
 
