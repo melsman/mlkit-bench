@@ -1,15 +1,27 @@
 signature MEM_TIME =
   sig
-    (* memTime {cmd, args, out_file} -
-     * Execute a cmd with args and report its memory and time usage.
-     * Output from the command is redirected to out_file.
-     * It is assumed that cmd does not write on stderr. *)
-
     type measurement
     val memTime : {cmd: string, args: string list,
                    out_file: string, eout_file: string option} -> measurement
+    val memTime' : {cmd: string, args: string list,
+                    out_file: string, eout_file: string option} -> measurement list
     val pp      : measurement -> string
   end
+
+(**
+
+[memTime {cmd, args, out_file}] executes cmd with args and reports its
+memory and time usage. Output from the command is redirected to
+out_file.  It is assumed that cmd does not write on stderr.
+
+[memTime' {cmd, args, out_file}] executes cmd with args and reports
+its memory and time usage by writing to stderr (1) a line of the form
+"[Runs: N]" followed by N lines of the form "[Run N: X.XXXs]" where
+X.XXX is the real time in seconds and N is the run number (1 to N).
+Output from the command is redirected to out_file.
+
+*)
+
 
 structure SysUtil = struct
 
@@ -151,6 +163,8 @@ sys          0.02
 	      real=real,
               gc=gc,gcn=gcn,majgc=majgc,majgcn=majgcn}
           end
+      fun getRss_macos lines = Real.floor (lookR lines "maximum resident set size")
+      val cmd_prefix_macos = "/usr/bin/env time -lp "
     end
 
 (* linux format of '/usr/bin/time -v':
@@ -248,6 +262,8 @@ sys          0.02
 	    real=real,
             gc=gc,gcn=gcn,majgc=majgc,majgcn=majgcn}
         end
+      fun getRss_linux lines = Real.floor (look lines "Maximum resident set size")
+      val cmd_prefix_linux = "/usr/bin/env time -v "
     end
 
     fun sysname () =
@@ -258,8 +274,45 @@ sys          0.02
         in look "sysname" (Posix.ProcEnv.uname())
         end
 
+    val () = print ("sysname: " ^ Option.getOpt(sysname(),"NONE")  ^ "\n")
+
     fun memTime x =
         case sysname() of
             SOME "Darwin" => memTime_macos x
           | _ => memTime_linux x
+
+
+    fun memTime0' cmd_prefix getRss {cmd, args, out_file, eout_file} : measurement list =
+        let val timeout = case eout_file of
+                              SOME f => f
+                            | NONE => "time.out"
+            val args = String.concatWith " " args
+            val command = cmd ^ " " ^ args ^ " > " ^ out_file
+            val command2 = cmd_prefix ^ command ^ " 2> " ^ timeout
+            val () = OS.FileSys.remove timeout handle _ => ()
+            val () = SysUtil.system command2
+                     handle _ => SysUtil.error ("Failed to execute command '" ^ command2 ^ "'")
+            val s = readAll timeout
+                    handle _ => SysUtil.error ("Failed to read output file " ^ timeout)
+            val lines = splitLines s
+            val rss = getRss lines
+            val runs = List.filter (fn l => String.isPrefix "[Run " l) lines
+        in List.map (fn r =>
+                        let val realt =
+                                case String.tokens (fn c => c = #":") r of
+                                    [_,s] => (case Real.fromString s of
+                                                  SOME r => r
+                                                | NONE => 0.0)
+                                  | _ => 0.0
+                        in {real=realt, rss=rss, size=0, data=0, stk=0, exe=0, sys=0.0,
+	                    user=0.0, gc=0.0, gcn=0, majgc=0.0, majgcn=0}
+                        end) runs
+        end
+
+    fun memTime' x =
+        case sysname() of
+            SOME "Darwin" => memTime0' cmd_prefix_macos getRss_macos x
+          | _ => memTime0' cmd_prefix_linux getRss_linux x
+
+
   end

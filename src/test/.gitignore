@@ -1,5 +1,6 @@
 MLB
 test.json
+test-it.json
 *.out
 *.exe.out
 *.exe.out.*
