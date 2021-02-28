@@ -296,7 +296,7 @@ fun scan_pair__noinline (seqScan: ('a*'b) arr * int * 'a array * 'b array -> uni
          | PAR {blks,blksz} =>
            let val (P,_) = gcs
                (* Sequentially scan each local block in parallel *)
-               val () = print "Computing local scans\n"
+               (*val () = print "Computing local scans\n"*)
                val () = parfor' (P,1) (0,blks)
                                 (fn i =>
                                     let val off = i*blksz
@@ -304,7 +304,7 @@ fun scan_pair__noinline (seqScan: ('a*'b) arr * int * 'a array * 'b array -> uni
                                     in seqScan (arr', off, tgta, tgtb)
                                     end)
                (* Scan of sums *)
-               val () = print "Scanning sums\n"
+               (*val () = print "Scanning sums\n"*)
                val sums : ('a*'b) arr =
                    (0,blks,fn i => let val j = Int.min(n-1,(i+1)*blksz-1)
                                    in (nth tgta j, nth tgtb j)
@@ -313,7 +313,7 @@ fun scan_pair__noinline (seqScan: ('a*'b) arr * int * 'a array * 'b array -> uni
                val ssumsb : 'b array = allocate blks b
                val () = seqScan (sums, 0, ssumsa, ssumsb)
                (* Distribute sums in each block *)
-               val () = print "Distribute sums\n"
+               (*val () = print "Distribute sums\n"*)
                val () = parfor' (P,1) (1,blks)
                                 (fn i => seqDist (ssumsa, ssumsb, blksz, tgta, tgtb, n, i))
            in (tgta,tgtb)

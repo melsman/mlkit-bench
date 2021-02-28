@@ -1,6 +1,6 @@
 MLKIT_ROOT ?= ~/gits/mlkit
-BENCHFILES=soac/sgm_scan.mlb soac/scan.mlb soac/filter.mlb ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb seam-carve/seam-carve.mlb
-BENCHFILES=fib/fib.mlb primes/primes.mlb mandelbrot/mandelbrot.mlb sobol/soboloption.mlb sobol/sobolpi.mlb vpmsort/vpmsort.mlb pmsort/pmsort.mlb
+BENCHFILES=ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb seam-carve/seam-carve.mlb
+BENCHFILES=soac/sgm_scan.mlb soac/filter.mlb soac/scan.mlb fib/fib.mlb primes/primes.mlb mandelbrot/mandelbrot.mlb sobol/soboloption.mlb sobol/sobolpi.mlb vpmsort/vpmsort.mlb pmsort/pmsort.mlb
 MLKIT_BENCH=../src/mlkit-bench
 
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')

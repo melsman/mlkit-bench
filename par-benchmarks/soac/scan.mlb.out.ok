@@ -1,6 +1,2 @@
-Scanning 50000000 numbers
-Computing local scans
-Scanning sums
-Distribute sums
-Max value in scan: 1249999975000000
-N * (N-1) / 2: 1249999975000000
+Benchmark: Scanning 50000000 numbers
+Evaluation: OK
