@@ -1,6 +1,6 @@
 MLKIT_ROOT ?= ~/gits/mlkit
-BENCHFILES=sobol/soboloption.mlb sobol/sobolpi.mlb mandelbrot/mandelbrot.mlb primes/primes.mlb soac/sgm_scan.mlb soac/scan.mlb soac/filter.mlb fib/fib.mlb vpmsort/vpmsort.mlb pmsort/pmsort.mlb ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb seam-carve/seam-carve.mlb
-BENCHFILES=pmsort/pmsort.mlb
+BENCHFILES=sobol/soboloption.mlb mandelbrot/mandelbrot.mlb primes/primes.mlb soac/sgm_scan.mlb soac/scan.mlb soac/filter.mlb fib/fib.mlb ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb seam-carve/seam-carve.mlb
+BENCHFILES=sobol/sobolpi.mlb vpmsort/vpmsort.mlb pmsort/pmsort.mlb
 MLKIT_BENCH=../src/mlkit-bench
 
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')
@@ -38,7 +38,7 @@ press: report-par.json
            -c 'real # mlton' \
            -c 'real # mpl' \
            -c 'real # seq' \
-           -c 'real # par0' \
+           -c 'real # par1' \
            -c 'real # par' \
            -c 'rss # par' \
            -c plen $<

@@ -275,8 +275,6 @@ sys          0.02
         in look "sysname" (Posix.ProcEnv.uname())
         end
 
-    val () = print ("sysname: " ^ Option.getOpt(sysname(),"NONE")  ^ "\n")
-
     fun memTime x =
         case sysname() of
             SOME "Darwin" => memTime_macos x
