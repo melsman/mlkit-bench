@@ -20,22 +20,11 @@ fun merge (a,b) =
     in rev(m(a,b,nil))
     end
 
-fun smsort nil = nil
-  | smsort [x] = [x]
-  | smsort xs = let val (l,r) = split xs
-                in merge (smsort l, smsort r)
-                end
-
-fun pmsort p [] : int list = []
-  | pmsort p [x] = [x]
-  | pmsort p xs =
-    if p <= 1 then smsort xs
-    else let val q = p div 2
-             val (xs1,xs2) = split xs
-             val (xs1,xs2) = ForkJoin.par (fn () => pmsort q xs1,
-                                           fn () => pmsort q xs2)
-         in merge(xs1,xs2)
-         end
+fun msort nil = nil
+  | msort [x] = [x]
+  | msort xs = let val (l,r) = split xs
+               in merge (msort l, msort r)
+               end
 
 fun rand (a,b) p = a + ((p+13) * 16807) mod (b-a)
 
@@ -56,15 +45,14 @@ fun chk (x::(ys as y::xs)) = x<=y andalso chk ys
 
 in
 
-val N = CommandLineArgs.parseInt "N" 1000000
-val P = CommandLineArgs.parseInt "P" 50
+val N = CommandLineArgs.parseInt "N" 100000
 val () =
     let val () = print ("Generating input of size " ^ Int.toString N ^ "...\n")
         val xs = randlist (10,10000) N 0
 
         val () = Timing.run "merge sort"
                             (fn {endtiming} =>
-                                let val res = pmsort P xs
+                                let val res = msort xs
                                     val () = endtiming()
                                 in length res = N andalso chk res
                                 end)

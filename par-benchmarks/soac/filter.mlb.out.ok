@@ -1,5 +1,2 @@
-Scanning 10000000 numbers
-Computing local scans
-Scanning sums
-Distribute sums
-Max value in filtered array (size = 101011): 9999990
+Benchmark: Filtering array of 10000000 numbers
+Evaluation: OK

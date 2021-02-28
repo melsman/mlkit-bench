@@ -1,2 +1,3 @@
-fib 46 (grain = 37)
-result 1836311903
+Benchmark: Calculating fib 46 (grain = 37)
+Evaluation: OK
+

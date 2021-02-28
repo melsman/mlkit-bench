@@ -73,7 +73,7 @@ type image = {height:int, width:int, data: RealArray.array}
 
 val height = CommandLineArgs.parseInt "height" 768
 val width = CommandLineArgs.parseInt "width" 1024
-val M = CommandLineArgs.parseInt "M" 10000  (* max iteration *)
+val M = CommandLineArgs.parseInt "M" 1000  (* max iteration *)
 
 fun pow2 0 = 1
   | pow2 n = 2*pow2(n-1)
@@ -129,9 +129,12 @@ fun mandel (Py, Px) : real =
     let val x0 = linterp(x1, x2, real Px / real width)
         val y0 = linterp(y1, y2, real Py / real height)
         (* Here N = 2^8 is chosen as a reasonable bailout radius. *)
-        fun loop (i, x, y) =
+        val hack = ref false
+        fun loop (a as (i, x, y)) = if !hack then a else
             if x*x + y*y <= bailout andalso i < M then
-              loop (i+1, x*x - y*y + x0, 2.0*x*y + y0)
+              loop let val dy = 2.0*x*y
+                   in (i+1, x0+x*x-y*y, y0+dy)
+                   end
             else (i, x+0.0, y+0.0)
         val (i, x, y) = loop (0, 0.0, 0.0)
     in

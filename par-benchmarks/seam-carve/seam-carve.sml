@@ -32,8 +32,12 @@ val _ =
   if numSeams >= 0 andalso numSeams <= w then ()
   else
     Util.die ("cannot remove " ^ Int.toString numSeams
-    ^ " seams from image of width " ^ Int.toString w ^ "\n")
+              ^ " seams from image of width "
+              ^ Int.toString w ^ "\n")
 
-val endTiming = Timing.start "Seam carving"
-val X = SCI.makeSeamCarveIndex numSeams image
-val () = endTiming()
+val () = Timing.run "Seam carving"
+                    (fn {endtiming} =>
+                        let val res = SCI.makeSeamCarveIndex numSeams image
+                            val () = endtiming()
+                        in true (* memo: insert validation here... *)
+                        end)

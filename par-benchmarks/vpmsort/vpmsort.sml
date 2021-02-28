@@ -69,10 +69,9 @@ fun prArr a =
     ( Array.app (fn x => print(Int.toString x ^ " ")) a
     ; print "\n")
 
-fun chk (a:int array) (i:int)=
-    if Array.length a <= 1 orelse i > Array.length a - 2 then "OK: sorted\n"
-    else if Array.sub(a,i) <= Array.sub(a,i+1) then chk a (i+1)
-    else "ERR: result not sorted\n"
+fun chk (a:int array) (i:int) =
+    (Array.length a <= 1 orelse i > Array.length a - 2) orelse
+    (Array.sub(a,i) <= Array.sub(a,i+1) andalso chk a (i+1))
 
 in
 
@@ -81,13 +80,13 @@ val P = CommandLineArgs.parseInt "P" 50
 val () =
     let val () = print ("Generating input of size " ^ Int.toString N ^ "...\n")
         val v = randArr (10,10000) N
-        val () = print "Starting merge sort...\n"
-        val endTiming = Timing.start "Sorting"
-        val res = pmsort P v
-        val () = endTiming()
-        val () = print "Checking result...\n"
-        val () = if Array.length res = Array.length v then print (chk res 0)
-                 else print "ERR: result length differ from arg\n"
+
+        val () = Timing.run "merge sort"
+                            (fn {endtiming} =>
+                                let val res = pmsort P v
+                                    val () = endtiming()
+                                in Array.length res = N andalso chk res 0
+                                end)
     in print "Goodbye.\n"
     end
 end

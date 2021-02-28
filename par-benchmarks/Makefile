@@ -1,5 +1,5 @@
 MLKIT_ROOT ?= ~/gits/mlkit
-BENCHFILES=sobol/soboloption.mlb sobol/sobolpi.mlb mandelbrot/mandelbrot.mlb primes/primes.mlb soac/sgm_scan.mlb soac/scan.mlb soac/filter.mlb fib/fib.mlb vpmsort/vpmsort.mlb pmsort/pmsort.mlb ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb seam-carve/seam-carve.mlb
+BENCHFILES=seam-carve/seam-carve.mlb ray/ray.mlb ray-orig/ray-orig.mlb nqueens/nqueens.mlb soac/sgm_scan.mlb soac/filter.mlb soac/scan.mlb fib/fib.mlb primes/primes.mlb mandelbrot/mandelbrot.mlb sobol/soboloption.mlb sobol/sobolpi.mlb vpmsort/vpmsort.mlb pmsort/pmsort.mlb
 MLKIT_BENCH=../src/mlkit-bench
 
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')
@@ -11,10 +11,11 @@ MPL_PROCS=8
 all: report-par.json
 	cp $< report-par_$(MLKIT_VERSION)_$(MACHINE_TAG)_$(TODAY).json
 
+#          -mpl:-mlb-path-var \'MLCOMP mpl\' -runtime procs -runtime $(MPL_PROCS): \
+
 report-par.json:
-	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -n 10 -o $@ \
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -it -r 4 -o $@ \
           -mlton:-mlb-path-var \'MLCOMP mlton\': \
-          -mpl:-mlb-path-var \'MLCOMP mpl\' -runtime procs -runtime $(MPL_PROCS): \
           -mlkit:MLCOMP=mlkit-seq -no_gc: \
           -mlkit:MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1: \
           -mlkit:MLCOMP=mlkit-par -no_gc -par: $(BENCHFILES)
@@ -36,6 +37,7 @@ press: report-par.json
            -c 'real # mlton' \
            -c 'real # mpl' \
            -c 'real # seq' \
-           -c 'real # par0' \
+           -c 'real # par1' \
            -c 'real # par' \
+           -c 'rss # par' \
            -c plen $<

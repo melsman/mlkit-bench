@@ -16,12 +16,12 @@ fun fib n =
        in x + y
        end
 
-val _ = print ("fib " ^ Int.toString N ^ " (grain = " ^ Int.toString grain ^ ")\n")
-
-val endTiming = Timing.start "Calculating"
-val result = fib N
-val () = endTiming()
-
 in
-val _ = print ("result " ^ Int.toString result ^ "\n")
+val () =
+    Timing.run ("Calculating fib " ^ Int.toString N ^ " (grain = " ^ Int.toString grain ^ ")")
+               (fn {endtiming} =>
+                   let val f = fib N
+                       val () = endtiming()
+                   in  f = 1836311903 (* N = 46 *)
+                   end)
 end
