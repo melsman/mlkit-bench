@@ -129,10 +129,17 @@ fun mandel (Py, Px) : real =
     let val x0 = linterp(x1, x2, real Px / real width)
         val y0 = linterp(y1, y2, real Py / real height)
         (* Here N = 2^8 is chosen as a reasonable bailout radius. *)
-        fun loop (i, x, y) =
-            if x*x + y*y <= bailout andalso i < M then
-              loop (i+1, x*x - y*y + x0, 2.0*x*y + y0)
+        val innerM = 100
+        fun innerloop (i, x, y) =
+            if x*x + y*y <= bailout andalso i < innerM
+            then innerloop (i+1, x*x - y*y + x0, 2.0*x*y + y0)
             else (i, x+0.0, y+0.0)
+        fun loop (i, x, y) =
+            let val (j,x,y) = innerloop (0,x,y)
+            in if x*x + y*y <= bailout andalso (i+j) < M
+               then loop (i+j,x,y)
+               else (i+j, x+0.0, y+0.0)
+            end
         val (i, x, y) = loop (0, 0.0, 0.0)
     in
       (* Avoid floating point issues with points inside the set. *)
