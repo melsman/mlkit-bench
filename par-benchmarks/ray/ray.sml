@@ -490,17 +490,23 @@ val endTiming = Timing.start "Scene BVH construction"
 val (objs, cam) = from_scene width height scene
 val () = endTiming()
 
-val endTiming = Timing.start "Rendering"
-val result = render objs width height cam
-val () = endTiming()
+fun doRender () = render objs width height cam
 
 val writeImage = if dop6 then image2ppm6 else image2ppm
 in
 val _ = if f <> "" then
-            let val out = TextIO.openOut f
-            in print ("Writing image to " ^ f ^ ".\n")
-               before writeImage out result
-               before TextIO.closeOut out
-            end
-        else print ("-f not passed, so not writing image to file.\n")
+          let val result = doRender()
+              val out = TextIO.openOut f
+          in print ("Writing image to " ^ f ^ ".\n")
+             before writeImage out result
+             before TextIO.closeOut out
+          end
+        else ( print ("-f not passed, so not writing image to file.\n")
+             ; Timing.run ("Rendering image for '" ^ scene_name ^ "'")
+                          (fn {endtiming} =>
+                              let val img = doRender()
+                                  val () = endtiming()
+                              in  #height img = height
+                              end) )
+
 end
