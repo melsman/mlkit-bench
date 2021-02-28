@@ -9,6 +9,8 @@ val N = CommandLineArgs.parseInt "N" 1000000
 
 val () = print ("Calculating the number of primes below or equal to " ^ Int.toString N ^ "\n")
 
+local
+
 fun concat_array (a1,a2) =
     let val sz1 = Array.length a1
     in Array.tabulate(sz1 + Array.length a2,
@@ -33,9 +35,12 @@ fun primes n : int array =
          in concat_array (ps0, new)
          end
 
-val endTiming = Timing.start "Calculating"
-val ps = primes N
-val () = endTiming()
-
-val () = print ("There are " ^ Int.toString (Array.length ps) ^
-                " primes below or equal to " ^ Int.toString N ^ "\n")
+in
+val () =
+    Timing.run ("Calculating the number of primes below " ^ Int.toString N)
+               (fn {endtiming} =>
+                   let val ps = primes N
+                       val () = endtiming()
+                   in  Array.length ps = 78498
+                   end)
+end

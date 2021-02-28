@@ -34,13 +34,12 @@ fun countSol n =
     search 0 []
   end
 
-val _ = print ("Counting number of " ^
-               Int.toString N ^ "x" ^ Int.toString N ^ " solutions\n")
-
-val endTiming = Timing.start "Counting"
-val result = countSol N
-val () = endTiming()
-
 in
-val _ = print ("result " ^ Int.toString result ^ "\n")
+val () = Timing.run ("Counting number of " ^
+                     Int.toString N ^ "x" ^ Int.toString N ^ " solutions")
+                    (fn {endtiming} =>
+                        let val res = countSol N
+                            val () = endtiming()
+                        in res = 73712 andalso N = 13
+                        end)
 end

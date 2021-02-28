@@ -25,6 +25,9 @@ fun files_equal (s1,s2) =
 fun exec {cmd,args,out_file} : measurement =
     MemTime.memTime {cmd=cmd,args=args,out_file=out_file, eout_file=NONE}
 
+fun exec' {cmd,args,out_file} : measurement list =
+    MemTime.memTime' {cmd=cmd,args=args,out_file=out_file, eout_file=NONE}
+
 fun exec_n n {out_file,cmd} =
     let val L = List.tabulate (n,fn i => i+1)
         val args =
@@ -42,7 +45,16 @@ fun exec_n n {out_file,cmd} =
     in R
     end
 
+fun exec_n' n {out_file,cmd} =
+    let val args = ["-r", Int.toString n, "--it"]
+        val () = print ("Executing: " ^ cmd ^ " " ^ String.concatWith " " args ^ " - ")
+        val ms = exec' {cmd=cmd,args=args,out_file=out_file 1}
+        val () = print "done]\n"
+    in ms
+    end
+
 val repetitions = ref 10
+val internal_timings = ref false
 
 fun process (compile: string -> string option * Time.time) (p:string)
     : string * Time.time * measurement list =
@@ -50,10 +62,13 @@ fun process (compile: string -> string option * Time.time) (p:string)
         (SOME t,ctime) =>
 	let val out = t ^ ".out.1"  (* memo: we could check every invocation *)
             val cmd = t
+            val the_exec_n =
+                if !internal_timings then exec_n'
+                else exec_n
 	    val res = (t, ctime,
-                       exec_n (!repetitions)
-                              {out_file=fn i => t ^ ".out." ^ Int.toString i,
-                               cmd=cmd})
+                       the_exec_n (!repetitions)
+                                  {out_file=fn i => t ^ ".out." ^ Int.toString i,
+                                   cmd=cmd})
 	              handle Fail s => raise Fail ("Failure executing command '" ^ cmd ^ "': " ^ s)
                            | X => raise Fail ("Failure executing command '" ^ cmd ^ "': " ^ General.exnMessage X)
         in if files_equal(p ^ ".out.ok", out) then res
@@ -94,7 +109,7 @@ fun getCompileArgs (nil, comps, out) = NONE
 	(case ss of
              f::ss => getCompileArgs (ss, comps, SOME f)
 	   | _ => NONE)
-      | "-n" =>
+      | "-r" =>
         (case ss of
              s::ss =>
              (case Int.fromString s of
@@ -103,7 +118,8 @@ fun getCompileArgs (nil, comps, out) = NONE
                                 ; getCompileArgs (ss, comps, out))
                   else NONE
                 | NONE => NONE)
-             | _ => NONE)
+           | _ => NONE)
+      | "-it" => ( internal_timings := true; getCompileArgs (ss,comps,out) )
       | _ => SOME (s::ss, rev comps, out)
 
 fun splitFlags (flags:string) : {env:(string*string)list,flags:string} =
@@ -293,7 +309,10 @@ fun main (progname, args) =
 	    ; print "  -mpl[:FLAG ... FLAG:]    Run MPL on each test.\n"
 	    ; print "  -mlkit[:FLAG ... FLAG:]  Run MLKIT on each test.\n"
 	    ; print "  -o file                  Write json output to `file`.\n"
-            ; print "  -n n                     Set number of repetitions to n.\n"
+            ; print "  -r n                     Set number of repetitions to n.\n"
+            ; print "  -it                      Use internal timings. Assumes\n"
+            ; print "                           usage with Timing.run function in\n"
+            ; print "                           par_benchmarks/util/Timing.sml\n"
             ; print "FLAG options to -mlton, -mpl, and -mlkit are passed to\n"
 	    ; print "  the compiler, with the exceptions of a flag of the form\n"
             ; print "  K=V, which sets the environment variable K to V during\n"

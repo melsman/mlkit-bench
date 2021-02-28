@@ -305,7 +305,7 @@ local fun getLines (json_str:string) : line list =
             | "MLTON" => "mlton"
             | "MLTON [-mlb-path-var 'MLCOMP mlton']" => "mlton"
             | "MLKIT [MLCOMP=mlkit-seq -no_gc]" => "seq"
-            | "MLKIT [MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1]" => "par0"
+            | "MLKIT [MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1]" => "par1"
             | "MLKIT [MLCOMP=mlkit-par -no_gc -par]" => "par"
             | _ =>
               if String.isPrefix "MPL" cn

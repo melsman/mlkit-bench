@@ -66,7 +66,6 @@ val gcs : S.gcs =
 
 val N = CommandLineArgs.parseInt "N" 1000000
 
-
 fun conv x =  (* real(Word64.toLargeInt(Word32.toLarge x)) / Sobol.norm *)
     let val x' = Word32.>>(x,0w2)
         val y = Word32.andb(x,0w3)
@@ -97,29 +96,33 @@ local (* option definition *)
     val r = 0.05      (* E2 *)
     val sigma = 0.2   (* F2 *)
     val T = 7.0/12.0  (* G2 *)
-in
     fun St n =
         S0 * Math.exp((r - sq sigma / 2.0) * T + sigma * n * Math.sqrt T)
     fun callOptionPayOff P =
         Math.exp(~ r * T) * max(P - K, 0.0)
+in
+    fun ppr r = Real.fmt (StringCvt.FIX (SOME 12)) r
+
+    fun priceOption () =
+        let val vs = S.map (fn i =>
+                               let val v = Sobol.independent i
+                                   val x = conv(Array.sub(v,0))
+                               in  invCumNormDist x
+                                |> St
+                                |> callOptionPayOff
+                               end) (S.iota N)
+            val r = S.reduce__inline gcs (op +) 0.0 vs
+        in  r / real N
+        end
 end
 
-val endTiming = Timing.start "Computing soboloption..."
-val vs = S.map (fn i =>
-                   let val v = Sobol.independent i
-                       val x = conv(Array.sub(v,0))
-                   in  invCumNormDist x
-                    |> St
-                    |> callOptionPayOff
-                   end) (S.iota N)
-val r = S.reduce__inline gcs (op +) 0.0 vs
-val p = r / real N
-val () = endTiming()
-
-fun ppr r = Real.fmt (StringCvt.FIX (SOME 12)) r
-
 in
-val () = print ("Option price: " ^ ppr p ^ " (" ^ Int.toString N ^ " paths)\n")
+val () = Timing.run "Computing option price"
+                    (fn {endtiming} =>
+                        let val p = priceOption()
+                            val () = endtiming()
+                        in ppr p = "5.446209009155"
+                        end)
 (*
   val expected = 5.437419207
   val () = print ("Precision (against " ^ ppr expected ^ "): "

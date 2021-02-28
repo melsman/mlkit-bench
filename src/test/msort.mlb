@@ -1,0 +1,7 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../../par-benchmarks/util/CommandLineArgs.sml
+  ../../par-benchmarks/util/Timing.sml
+in
+  msort.sml
+end

@@ -183,9 +183,7 @@ fun for (lo,hi) (f:int->unit) : unit =
     in loop lo
     end
 
-val endTiming = Timing.start "Start image construction"
-
-val img =
+fun mk_img () =
     let val data = RealArray.tabulate (height*width,fn _ => 0.0)
         val () = ForkJoin.parfor' gcs (0,height-1)
                                   (fn y => for (0,width)
@@ -197,7 +195,7 @@ val img =
         data = data }
     end
 
-val () = endTiming()
+
 
 val f = CommandLineArgs.parseString "f" ""
 val dop6 = CommandLineArgs.parseFlag "ppm6"
@@ -205,10 +203,19 @@ val dop6 = CommandLineArgs.parseFlag "ppm6"
 val writeImage = if dop6 then image2ppm6 else image2ppm
 in
 val _ = if f <> "" then
-            let val out = TextIO.openOut f
-            in print ("Writing image to " ^ f ^ ".\n")
-               before writeImage out img
-               before TextIO.closeOut out
-            end
-        else print ("-f not passed, so not writing image to file.\n")
+          let val out = TextIO.openOut f
+              val endTiming = Timing.start "Start image construction"
+              val img = mk_img()
+              val () = endTiming()
+          in print ("Writing image to " ^ f ^ ".\n")
+             before writeImage out img
+             before TextIO.closeOut out
+          end
+        else ( print ("-f not passed, so not writing image to file.\n")
+             ; Timing.run "Generating Mandelbrot image"
+                          (fn {endtiming} =>
+                              let val img = mk_img()
+                                  val () = endtiming()
+                              in  #height img = height
+                              end) )
 end

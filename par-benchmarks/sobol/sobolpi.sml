@@ -18,22 +18,30 @@ local
          / Sobol.norm
       end
 
-  val endTiming = Timing.start "Computing pi..."
-  val vs = S.map (fn i =>
-                     let val v = Sobol.independent i
-                         val x = conv(Array.sub(v,0))
-                         val y = conv(Array.sub(v,1))
-                     in if x*x+y*y <= 1.0 then 1
-                        else 0
-                     end) (S.iota N)
-  val r = S.reduce gcs (op +) 0 vs
-  val pi = 4.0 * real r / real N
-  val () = endTiming()
+  fun computePi () =
+      let val vs = S.map (fn i =>
+                             let val v = Sobol.independent i
+                                 val x = conv(Array.sub(v,0))
+                                 val y = conv(Array.sub(v,1))
+                             in if x*x+y*y <= 1.0 then 1
+                                else 0
+                             end) (S.iota N)
+          val r = S.reduce gcs (op +) 0 vs
+      in 4.0 * real r / real N
+      end
+
+  val () = Timing.run "Computing pi"
+                      (fn {endtiming} =>
+                          let val pi = computePi()
+                              val () = endtiming()
+                          in Real.fmt (StringCvt.FIX (SOME 2)) pi = "3.14"
+                          end)
 in
+(*
   fun ppr r = Real.fmt (StringCvt.FIX (SOME 12)) r
   val () = print ("PI: " ^ ppr pi ^ "\n")
   val () = print ("Precision: " ^ ppr (Real.abs(Math.pi - pi)) ^ "\n")
-
+*)
   (* Drawing *)
   val K = CommandLineArgs.parseInt "K" 100
   type image = {height:int, width:int, data: RealArray.array}
@@ -66,7 +74,7 @@ in
       [(x-5,y),(x-4,y),(x-3,y),(x-2,y),(x-1,y),(x,y),(x+1,y),(x+2,y),(x+3,y),(x+4,y),(x+5,y),
        (x,y-5),(x,y-4),(x,y-3),(x,y-2),(x,y-1),(x,y+1),(x,y+2),(x,y+3),(x,y+4),(x,y+5)]
 
-  val img =
+  fun mk_img () =
     let val data = RealArray.tabulate (height*width,fn _ => 0.0)
         val () = S.app gcs (fn i =>
                                let val v = Sobol.independent i
@@ -88,11 +96,13 @@ in
 
   val f = CommandLineArgs.parseString "f" ""
 
-  val _ = if f <> "" then
-            let val out = TextIO.openOut f
-            in print ("Writing image to " ^ f ^ ".\n")
-               before image2ppm out img
-               before TextIO.closeOut out
-            end
-          else print ("-f not passed, so not writing image to file.\n")
+  val _ =
+      if f <> "" then
+        let val out = TextIO.openOut f
+            val img = mk_img ()
+        in print ("Writing image to " ^ f ^ ".\n")
+           before image2ppm out img
+           before TextIO.closeOut out
+        end
+      else print ("-f not passed, so not writing image to file.\n")
 end
