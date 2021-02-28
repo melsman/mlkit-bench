@@ -62,9 +62,9 @@ fun invCumNormDist p =
 
 val gcs : S.gcs =
     (CommandLineArgs.parseInt "P" 50,
-     CommandLineArgs.parseInt "G" 10000)
+     CommandLineArgs.parseInt "G" 500000)
 
-val N = CommandLineArgs.parseInt "N" 1000000
+val N = CommandLineArgs.parseInt "N" 10000000
 
 
 fun conv x =  (* real(Word64.toLargeInt(Word32.toLarge x)) / Sobol.norm *)

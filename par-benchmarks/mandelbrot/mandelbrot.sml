@@ -73,7 +73,7 @@ type image = {height:int, width:int, data: RealArray.array}
 
 val height = CommandLineArgs.parseInt "height" 768
 val width = CommandLineArgs.parseInt "width" 1024
-val M = CommandLineArgs.parseInt "M" 1000  (* max iteration *)
+val M = CommandLineArgs.parseInt "M" 10000  (* max iteration *)
 
 fun pow2 0 = 1
   | pow2 n = 2*pow2(n-1)
