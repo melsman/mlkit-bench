@@ -1,6 +1,6 @@
 set xlabel 'Cores'
 set ylabel 'Speedup'
-set key above
+set key above horizontal
 set datafile separator " "
 set style function linespoints
 set y2tics 1,2
