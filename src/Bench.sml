@@ -61,7 +61,7 @@ fun process (compile: string -> string option * Time.time) (p:string)
     case compile p of
         (SOME t,ctime) =>
 	let val out = t ^ ".out.1"  (* memo: we could check every invocation *)
-            val cmd = t
+            val cmd = "./" ^ t
             val the_exec_n =
                 if !internal_timings then exec_n'
                 else exec_n

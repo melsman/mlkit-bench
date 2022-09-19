@@ -4,6 +4,7 @@
 ##   $ python -m SimpleHTTPServer 8000
 ##
 
+SMLPKG?=smlpkg
 SML_LIB= ~/gits/mlkit/js
 JS_PATH_FLAGS=-js_path_compress -js_path_relative_to $(SML_LIB)
 SMLTOJS=SML_LIB=$(SML_LIB) ~/gits/mlkit/bin/smltojs
@@ -11,7 +12,7 @@ SMLTOJS=SML_LIB=$(SML_LIB) ~/gits/mlkit/bin/smltojs
 .PHONY: all
 all: index.html
 
-page.html: main.mlb
+page.html: main.mlb lib
 	$(SMLTOJS) $(JS_PATH_FLAGS) -o page $<
 
 index.html: static/page_start.html page.html static/page_end.html
@@ -20,7 +21,7 @@ index.html: static/page_start.html page.html static/page_end.html
 	cat static/page_end.html >> $@
 
 .PHONY: highchart
-highchart: highchart.mlb
+highchart: highchart.mlb lib
 	SML_LIB=$(SML_LIB) $(SMLTOJS) -c $<
 
 DEPLOYDIR=dist
@@ -62,3 +63,6 @@ deploy: cleandeploy index.html
 #
 	mkdir -p $(DEPLOYDIR)/lib/github.com/diku-dk/sml-setmap/map/MLB/Js
 	cp -pa lib/github.com/diku-dk/sml-setmap/map/MLB/Js/*.js $(DEPLOYDIR)/lib/github.com/diku-dk/sml-setmap/map/MLB/Js
+
+lib:
+	$(SMLPKG) sync

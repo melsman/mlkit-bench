@@ -9,3 +9,6 @@ mlkit-bench-press: Press.mlb Makefile *.sml
 .PHONY: clean
 clean:
 	rm -rf MLB *~ mlkit-bench-press
+
+../charting/lib:
+	$(MAKE) -C ../charting lib
