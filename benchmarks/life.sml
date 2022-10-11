@@ -18,11 +18,6 @@ local
   fun app f [] = ()
     | app f (x::xs) = (f x; app f xs)
 
-
-  fun eq_integer_curry(x)(y:int) = x= y
-  fun eq_int_pair_curry (x:int,x':int)(y,y'): bool =
-    x=y andalso x'=y'
-
   exception ex_undefined of string
   fun error str = raise ex_undefined str
 
@@ -40,7 +35,6 @@ local
         loop l
     end
 
-
   fun exists pred l =
     let fun loop [] = false
           | loop (x::xs) =
@@ -49,7 +43,7 @@ local
         loop l
     end
 
-  fun member eq x a = exists (eq a) x
+  fun member x a = exists (fn b => b = a) x
 
   fun cons a x = a::x
 
@@ -119,12 +113,12 @@ local
             let fun f (q) =
                   case q of (_,_,_,_,[]) => q
                   | ( xover, x3, x2, x1, (a::x)) =>
-                    if member eq_int_pair_curry xover a then f( xover, x3, x2, x1, x) else
-                    if member eq_int_pair_curry x3 a then f ((a::xover), x3, x2, x1, x) else
-  		    if member eq_int_pair_curry x2 a then f (xover, (a::x3), x2, x1, x) else
-                    if member eq_int_pair_curry x1 a then f (xover, x3, (a::x2), x1, x) else
+                    if member xover a then f( xover, x3, x2, x1, x) else
+                    if member x3 a then f ((a::xover), x3, x2, x1, x) else
+  		    if member x2 a then f (xover, (a::x3), x2, x1, x) else
+                    if member x1 a then f (xover, x3, (a::x2), x1, x) else
   		    f (xover, x3, x2, (a::x1), x)
-                fun diff x y = filter (fn x => not(member eq_int_pair_curry y x)) x  (* unfolded o *)
+                fun diff x y = filter (fn x => not(member y x)) x  (* unfolded o *)
                 val (xover, x3, _, _, _) = f ([],[],[],[],x)
              in diff x3 xover end
 
@@ -143,7 +137,7 @@ local
     and nextgen gen =
       let
         val living = alive gen
-        fun isalive x = member eq_int_pair_curry living x
+        fun isalive x = member living x
         fun liveneighbours x = length( filter isalive ( neighbours x))
         fun twoorthree n = n=2 orelse n=3
         val survivors = filter (twoorthree o liveneighbours) living

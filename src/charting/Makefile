@@ -32,9 +32,10 @@ realclean: clean
 
 .PHONY: clean
 clean: cleandeploy
-	rm -rf MLB *~ index.html page.html prims.js basis static/*~
-	rm -rf isodate/*~ isodate/MLB
-	rm -rf listutil/*~ listutil/MLB
+	find . -name 'MLB' | xargs rm -rf
+	rm -rf *~ index.html page.html prims.js basis static/*~
+	rm -rf isodate/*~
+	rm -rf listutil/*~
 
 .PHONY: cleandeploy
 cleandeploy:
