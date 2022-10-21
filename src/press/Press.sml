@@ -326,6 +326,8 @@ local fun getLines (json_str:string) : line list =
             | _ =>
               if String.isPrefix "MPL" cn
               then "mpl"
+              else if String.isPrefix "MLKIT" cn andalso String.isSubstring "-argo" cn
+              then "argo"
               else cn
 
       fun expands r cn nil = nil
