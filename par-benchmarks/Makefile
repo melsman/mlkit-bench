@@ -7,6 +7,8 @@ TODAY=$(shell date "+%Y-%m-%d")
 MACHINE_TAG ?= MacBookPro2016
 MPL_PROCS=8
 
+ARGOBOTS_ROOT?=`pwd`/../../argobots
+
 .PHONY: all
 all: report-par.json
 	cp $< report-par_$(MLKIT_VERSION)_$(MACHINE_TAG)_$(TODAY).json
@@ -20,9 +22,15 @@ report-par.json:
           -mlkit:MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1: \
           -mlkit:MLCOMP=mlkit-par -no_gc -par: $(BENCHFILES)
 
+report-arpar.json:
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -it -r 4 -o $@ \
+          -mlkit:MLCOMP=mlkit-par -no_gc -par -argo -libs 'm,c,dl,abt' -libdirs $(ARGOBOTS_ROOT)/src/.libs: \
+          -mlkit:MLCOMP=mlkit-seq -no_gc: \
+          -mlkit:MLCOMP=mlkit-par -no_gc -par: $(BENCHFILES)
+
 .PHONY: clean
 clean:
-	rm -rf MLB *~ *.exe.out.* *.exe time.out report-par.json *.auto.mlb
+	rm -rf MLB *~ *.exe.out.* *.exe time.out report-par.json report-arpar.json *.auto.mlb
 	rm -rf */MLB */*~ */run ray/*.ppm ray-orig/*.ppm */*.exe*
 
 .PHONY: version
@@ -41,3 +49,7 @@ press: report-par.json
            -c 'real # par' \
            -c 'rss # par' \
            -c plen $<
+
+.PHONY: arpress
+arpress: report-arpar.json
+	@../src/press/mlkit-bench-press -sn -d real -d rss -skip1 -merge_rows cname $<

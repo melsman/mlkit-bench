@@ -2,7 +2,7 @@
 
 (*by Torben Mogensen (torbenm@diku.dk)*)
 
-
+local
 val pi = 3.14159265358979
 
 fun pr (s : string) : unit = print(s)
@@ -36,9 +36,6 @@ fun fmul (c,pin,[]) = []
   | fmul (c,pin,(a::b))
   =  ~*((Math.cos(c),Math.sin(c)), a) :: fmul (c+pin,pin,b)
 
-fun cp [] = []
-  | cp (a::b) = a :: cp b
-
 fun fft ([(a,b)], 1)  = [(a+0.0,b+0.0)]
   | fft (x, n2)
   = let val n = n2 div 2
@@ -68,5 +65,6 @@ fun run () = (pr "\nfft by Torben Mogensen (torbenm@diku.dk)\n\nfft'ing... ";
 	      let val r = fft (zip (#3(mkList(7.0,n,[])),
 				    #3(mkList(8.0,n,[]))), n) in
 	      pr " done\n" end);
-
+in
 val () = run ()
+end

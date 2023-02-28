@@ -15,8 +15,10 @@ test:
 clean:
 	$(MAKE) -C src clean
 	$(MAKE) -C src/test clean
+	find lib -name 'MLB' | xargs rm -rf
 	rm -rf *~
 
 .PHONY: realclean
 realclean: clean
 	rm -rf lib
+	$(MAKE) -C src/charting realclean

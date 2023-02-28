@@ -17,7 +17,7 @@ fun threatened (i,j,[]) = false
 structure Seq = FuncSequence
 
 fun copy nil = nil
-  | copy ((x,y)::xs) = (x,y) :: copy xs
+  | copy ((x,y)::xs) = (x,y)::copy xs
 
 fun countSol n =
   let
@@ -25,7 +25,7 @@ fun countSol n =
       if i >= n then 1 else
       let
         fun tryCol j =
-          if threatened (i, j, b) then 0 else search (i+1) ((i,j)::copy b)
+          if threatened (i, j, b) then 0 else search (i+1) ((i,j)::(*copy*) b)
       in
         if i >= D then
           (* if we're already a few levels deep, then just go sequential *)

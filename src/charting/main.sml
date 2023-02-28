@@ -182,15 +182,17 @@ fun genBarChart (picker_elem, graph_parent_elem) (dataspecs:dataspec list) (ymea
  * controlled from a selection box. It also supports redrawing upon change of the underlying
  * data. *)
 
-fun genLineChart (picker_elem, graph_parent_elem) (dataspecs:dataspec list) (ymeasure:string)
+fun genLineChart cname
+                 (picker_elem, graph_parent_elem) (dataspecs:dataspec list) (ymeasure:string)
                  (getData:unit -> Data.line list) (redraw: (unit->unit) -> unit) : unit =
     let fun chartEntitiesFromDataSpec (data:Data.line list) (kind:string) =
             let val (ytitle,getnum: Data.line -> real) =
                   case List.find (fn ds => #kind ds = kind) dataspecs of
                       SOME ds => (#title ds, #getnum ds)
                     | NONE => ("unknown", fn _ => 0.0)
-                val data = List.filter (fn l => #cname l = "MLKIT") data (* MEMO *)
+                val data = List.filter (fn l => #cname l = cname) data   (* pick the relevant data for cname *)
                 val cversions = collect #cversion data
+                val dates = collect (fn d => ISODate.toString(ISODate.fromDate (#date d))) data
                 val pnames = collect #pname data
 (*
                 val () = JsUtil.alert ("Data: " ^ Int.toString(length data) ^ "\n" ^
@@ -200,6 +202,7 @@ fun genLineChart (picker_elem, graph_parent_elem) (dataspecs:dataspec list) (yme
                 val series =
                     map (fn pn =>
                             let val data = List.filter (fn l => #pname l = pn) data
+(*
                                 val drs = List.mapPartial
                                               (fn cv =>
                                                   case cversionToCommitDate cv of
@@ -207,6 +210,14 @@ fun genLineChart (picker_elem, graph_parent_elem) (dataspecs:dataspec list) (yme
                                                                      [l] => SOME (d, getnum l)
                                                                    | _ => NONE)
                                                     | NONE => NONE) cversions
+*)
+                                val drs = List.mapPartial
+                                              (fn d =>
+                                                  case List.filter (fn l => ISODate.toString(ISODate.fromDate (#date l)) = d) data of
+                                                      [l] => (case ISODate.fromString d of
+                                                                  SOME d => SOME (d, getnum l)
+                                                                | NONE => NONE)
+                                                    | _ => NONE) dates
                             in (pn, drs)
                             end) pnames
 (*                val series = [List.hd series] *)
@@ -412,15 +423,22 @@ struct
                   tag "p" mach_picker_elem
                  ))
 
-  val exectime_picker_elem = tag0 "div"
-  val exectime_graph_elem = tag0 "div"
+  val exectime_picker_mlkit_elem = tag0 "div"
+  val exectime_graph_mlkit_elem = tag0 "div"
+  val exectime_picker_mlkitnogc_elem = tag0 "div"
+  val exectime_graph_mlkitnogc_elem = tag0 "div"
+
 
   val exec_block_elem =
       taga "div" [("class","card w-100")]
            (taga "div" [("class","card-body")]
-                 (tag "h2" ($"Execution Time") &
-                  tag "p" exectime_picker_elem &
-                  tag "p" exectime_graph_elem))
+                 (tag "h2" ($"Execution Time (mlkit)") &
+                  tag "p" exectime_picker_mlkit_elem &
+                  tag "p" exectime_graph_mlkit_elem) &
+            taga "div" [("class","card-body")]
+                 (tag "h2" ($"Execution Time (mlkit -no_gc)") &
+                  tag "p" exectime_picker_mlkitnogc_elem &
+                  tag "p" exectime_graph_mlkitnogc_elem))
 
   val elem =
       tag "div"
@@ -454,7 +472,11 @@ struct
         val plenDataSpecs : dataspec list =
             [{kind="plen",  title="Program length (lines)",  getnum=real o #plen}]
 *)
-      in genLineChart (exectime_picker_elem, exectime_graph_elem)
+      in genLineChart "MLKIT"
+                      (exectime_picker_mlkit_elem, exectime_graph_mlkit_elem)
+                      execTimeDataSpecs "sec" getData redraw
+       ; genLineChart "MLKIT [-no_gc]"
+                      (exectime_picker_mlkitnogc_elem, exectime_graph_mlkitnogc_elem)
                       execTimeDataSpecs "sec" getData redraw
 (*       ; genGraph (memusage_picker_elem, memusage_graph_elem)
                   memUsageDataSpecs "kb" getData redraw

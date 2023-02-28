@@ -8,6 +8,9 @@ fun mlkit_root () =
 fun compact s =
     let fun f(nil,acc) = implode(rev acc)
 	  | f(#" "::cs,acc) = f (cs,acc)
+          | f(#","::cs,acc) = f (cs,#"-"::acc)
+          | f(#"/"::cs,acc) = f (cs,#"-"::acc)
+          | f(#"."::cs,acc) = f (cs,#"-"::acc)
 	  | f(c::cs,acc) = f (cs, c::acc)
     in f (explode s, nil)
     end

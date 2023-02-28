@@ -22,4 +22,33 @@ fun systemOut cmd =
        else raise Fail ("FileUtil.systemOut.Failed executing the command '" ^ cmd ^ "'")
     end
 
+local
+fun sourcesMlb mlbfile =
+    let val s = readFile mlbfile
+        val ts = String.tokens Char.isSpace s
+        (* eliminate tokens with $ in them *)
+        val ts = List.filter (not o (CharVector.exists (fn c => c = #"$"))) ts
+        (* include only files with sml/sig/mlb-extensions *)
+        val ts = List.filter (fn t =>
+                                 case OS.Path.ext t of
+                                     SOME e => e = "sml" orelse e = "sig" orelse e = "mlb"
+                                   | NONE => false) ts
+    in ts
+    end
+in
+fun linesOfFile f =
+    case OS.Path.ext f of
+        SOME ext =>
+        if ext = "sig" orelse ext = "sml" then
+          (length (String.fields (fn c => c = #"\n") (readFile f))
+           handle _ => 0)
+        else if ext = "mlb" then
+          let val fs = sourcesMlb f
+              val dir = OS.Path.dir f
+              val fs = map (fn f => OS.Path.concat (dir,f)) fs
+          in foldl (op +) 0 (map linesOfFile fs)
+          end
+        else 0
+      | _ => 0
+end
 end

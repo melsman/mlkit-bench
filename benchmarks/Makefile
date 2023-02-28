@@ -1,6 +1,10 @@
 MLKIT_ROOT ?= ~/gits/mlkit
 BENCHFILES=vliw.sml lexgen.sml badlife.sml barnes-hut.mlb DLX.sml fft.sml fib37.sml kbc.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml msort-rf.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml tsp_tp.sml zebra.sml zern.sml
 #BENCHFILES=vliw.sml lexgen.sml
+
+BENCHFILES_SORTED=DLX.sml barnes-hut.mlb fft.sml fib37.sml kbc.sml lexgen.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort-rf.sml msort.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml vliw.sml zebra.sml zern.sml
+#BENCHFILES_SORTED=life.sml
+
 MLKIT_BENCH=../src/mlkit-bench
 
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')
@@ -13,13 +17,16 @@ all: report.json
 	cp $< report_$(MLKIT_VERSION)_$(MACHINE_TAG)_$(TODAY).json
 
 report.json:
-	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -n 30 -o $@ -mlkit:-no_ri: -mlkit -mlkit:-gengc: -mlkit:-no_ri -gengc: -mlkit:-no_gc: -mlton $(BENCHFILES)
+#	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit -mlkit:-no_gc: -mlton $(BENCHFILES)
+#	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit:-no_ri: -mlkit -mlkit:-gengc: -mlkit:-no_ri -gengc: -mlkit:-no_gc: -mlton $(BENCHFILES)
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit -mlkit:-disable_spurious_type_variables -scratch: -mlkit:-no_gc: -mlton $(BENCHFILES_SORTED)
 
 .PHONY: clean
 clean:
 	rm -rf MLB *~ *.exe.out.* *.exe time.out report.json *.auto.mlb
 	rm -rf raybench/MLB raybench/*~ nucleic/MLB nucleic/*~
 	rm -rf mlyacc/MLB mlyacc/*~ logic/MLB logic/*~ barnes-hut/MLB barnes-hut/*~
+	rm -rf *.spurious *.spurious.log *.spurious.no.log *.spurious.yes.log
 
 # ------------------------------
 # GC / Region collection ratios
@@ -101,8 +108,6 @@ mlyacc_pdfs: mlyacc_g_prof.pdf mlyacc_GG_prof.pdf mlyacc_rg_prof.pdf mlyacc_rGG_
 	/bin/echo -n "$*:" > $@
 	./$< -verbose_gc 2>&1 > /dev/null | grep -i Frag >> $@
 
-BENCHFILES_SORTED=DLX.sml barnes-hut.mlb fft.sml fib37.sml kbc.sml lexgen.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort-rf.sml msort.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml vliw.sml zebra.sml zern.sml
-
 FRAG_GC_FILES=$(BENCHFILES_SORTED:%=%.gc.frag)
 FRAG_GENGC_FILES=$(BENCHFILES_SORTED:%=%.gengc.frag)
 FRAG_NORIGC_FILES=$(BENCHFILES_SORTED:%=%.norigc.frag)
@@ -137,8 +142,63 @@ frags.txt: frag_names.txt frag_rg.txt frag_rGG.txt frag_g.txt frag_GG.txt
 .PHONY: frags
 frags: frag_rg.txt frag_rGG.txt frag_g.txt frag_GG.txt
 
+# ------------------
+# Spurious functions
+# ------------------
+
+%.spurious.log: %
+	$(MLKIT) -stats_spurious -o $*.spurious.exe $< > $@
+
+%.spurious.no.log: %
+	(rm -rf MLB */MLB; $(MLKIT) -disable_spurious_type_variables -Pcee -o $*.spurious.dummy.exe $< > $@)
+
+%.spurious.yes.log: %
+	(rm -rf MLB */MLB; $(MLKIT) -Pcee -o $*.spurious.dummy.exe $< > $@)
+
+%.spurious: %.spurious.log %.spurious.no.log %.spurious.yes.log
+	@/bin/echo -n "$* & " | sed 's/.sml//' | sed 's/.mlb//' > $@
+	../src/smlloc $* | tr -d '\n' >> $@
+	@/bin/echo -n ' & ' >> $@
+	@grep 'Spurious functions' $< | sed -n -E -e 's/.*: ([0-9]+) \/ ([0-9]+)/\1/p' | awk '{s+=$$1} END {print s}' | tr -d '\n' >> $@
+	@/bin/echo -n ' / ' >> $@
+	@grep 'Spurious functions' $< | sed -n -E -e 's/.*: ([0-9]+) \/ ([0-9]+)/\2/p' | awk '{s+=$$1} END {print s}' | tr -d '\n' >> $@
+#	@/bin/echo -n ' (' >> $@
+#	/bin/echo -n "scale=1; $$(grep 'Spurious functions:' $< | sed -n -E -e 's/.*: ([0-9]+) \/ ([0-9]+)/\1/p' | awk '{s+=$$1} END {print s}') * 100.0 / $$(grep 'Spurious functions:' $< | sed -n -E -e 's/.*: ([0-9]+) \/ ([0-9]+)/\2/p' | awk '{s+=$$1} END {print s}')" | bc -l | tr -d '\n' >> $@
+#	@/bin/echo -n '%)' >> $@
+	@/bin/echo -n ' & ' >> $@
+	@grep 'Spurious instantiations' $< | sed -n -E -e 's/.*: ([0-9]+) \/ ([0-9]+)/\1/p' | awk '{s+=$$1} END {print s}' | tr -d '\n' >> $@
+	@/bin/echo -n ' / ' >> $@
+	@grep 'Spurious instantiations' $< | sed -n -E -e 's/.*: ([0-9]+) \/ ([0-9]+)/\2/p' | awk '{s+=$$1} END {print s}' | tr -d '\n' >> $@
+#	@/bin/echo -n ' (' >> $@
+#	/bin/echo -n "scale=1; $$(grep 'Spurious instantiations:' $< | sed -n -E -e 's/.*: ([0-9]+) \/ ([0-9]+)/\1/p' | awk '{s+=$$1} END {print s}') * 100.0 / $$(grep 'Spurious instantiations:' $< | sed -n -E -e 's/.*: ([0-9]+) \/ ([0-9]+)/\2/p' | awk '{s+=$$1} END {print s}')" | bc -l | tr -d '\n' >> $@
+#	@/bin/echo -n '%)' >> $@
+	@/bin/echo -n ' & ' >> $@
+	@(diff -q $*.spurious.no.log $*.spurious.yes.log; /bin/echo -n $$? | sed 's/1/x/' | sed 's/0//' >> $@)
+	@/bin/echo ' \\' >> $@
+
+SPURIOUS_FILES=$(BENCHFILES_SORTED:%=%.spurious)
+
+spurious.report: $(SPURIOUS_FILES)
+	/bin/echo 'Program & LoC & Spur. funs. & Spur. insts. & Code diff \\ \hline' > $@
+	cat $^ >> $@
+
+.PHONY: spurious
+spurious: spurious.report
+	cat $<
+
 .PHONY: version
 version:
 	@echo $(MLKIT_VERSION)
 	@echo $(TODAY)
 	@echo $(BENCHFILES_SORTED)
+
+.PHONY: press
+press: report.json
+	@../src/press/mlkit-bench-press -sn -d real -d rss -skip1 \
+           -merge_rows cname \
+           -c pname \
+           -c plen \
+           -c 'real # rg' \
+           -c 'real # r' \
+           -c 'real # mlton' \
+           $<

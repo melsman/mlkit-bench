@@ -76,9 +76,19 @@
  * Who owns the zebra?
  *)
 
+(*
 fun peek (l, p) = List.find p l
-fun map (l, f) = List.map f l
+val optMap = Option.map
 fun fold (l, b, f) = List.foldl f b l
+*)
+
+fun optMap f NONE = NONE
+  | optMap f (SOME x) = SOME (f x)
+
+fun peek (l,p) =
+    case l of
+        nil => NONE
+      | x::xs => if p x then SOME x else peek (xs,p)
 
 datatype cigarette = Blend | BlueMaster | Dunhill | PallMall | Prince
 val cigaretteToString =
@@ -145,7 +155,7 @@ fun search () =
       val pets = init [Bird, Cat, Dog, Horse, Zebra]
 
       fun ''a find (r: ''a attribute ref) (x: ''a): pos option =
-	 Option.map #1 (peek (#known (!r), fn (_, y) => x = y))
+	 optMap #1 (peek (#known (!r), fn (_, y) => x = y))
       val smoke = find cigarettes
       val color = find colors
       val drink = find drinks

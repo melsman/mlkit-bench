@@ -45,6 +45,7 @@ in
   val (enable_sd, enabled_sd) = enable_enabled "sd"                         (* non-relative stddev *)
   val (enable_M, enabled_M) = enable_enabled "M"
   val (enable_N, enabled_N) = enable_enabled "N"
+  val (enable_no_mem_dev, enabled_no_mem_dev) = enable_enabled "no_mem_dev"  (* no deviation data printed for mem-columns *)
   val (enable_latex, enabled_latex) = enable_enabled "latex"                (* latex output *)
   val (enable_gnuplot, enabled_gnuplot) = enable_enabled "gnuplot"          (* gnuplot output *)
   val (enable_shortnames, enabled_shortnames) = enable_enabled "shortnames" (* try to shorten program names *)
@@ -85,6 +86,7 @@ fun getCompileArgs (nil, flags:flags) = NONE
          | "-shortnames" => getCompileArgs(ss,enable_shortnames flags)
          | "-sn" => getCompileArgs(ss,enable_shortnames flags)
          | "-merge_rows" => cont add_merge_rows ss
+         | "-no_mem_dev" => getCompileArgs(ss,enable_no_mem_dev flags)
          | _ => SOME (sourceFiles(s::ss),flags)
     end
 
@@ -126,6 +128,15 @@ local fun getLines (json_str:string) : line list =
             | "gcn" => real(#gcn m)
             | "majgcn" => real(#majgcn m)
             | _ => die ("Expecting data specifier to be one of rss, size, data, stk, exe, sys, user, real, gc, gcn, majgc, or majgcn - got '" ^ d ^ "'")
+
+      fun is_time_col d =
+          case d of
+              "sys" => true
+            | "user" => true
+            | "real" => true
+            | "gc" => true
+            | "majgc" => true
+            | _ => false
 
       fun sq s : real = s * s
       fun wrap s e = s ^ e ^ s
@@ -230,7 +241,7 @@ local fun getLines (json_str:string) : line list =
               fun is_count d = List.exists (fn x => x=d) ["gcn","majgcn"]
               fun pp d v = if is_memory d then
                              if enabled_M flags then
-                               real_to_string 1 (v / 1000.0)
+                               real_to_string 0 (v / 1000.0)
                              else if v >= 100000.0 then real_to_string 0 (v / 1000.0) ^ "M"
                              else if v >= 999.0 then real_to_string 1 (v / 1000.0) ^ "M"
                              else real_to_string 0 v ^ "K"
@@ -240,6 +251,7 @@ local fun getLines (json_str:string) : line list =
               val data = rev(#data flags)
               val cols0 = [("cname",#cname line), ("cversion",#cversion line), ("pname",pp_pname flags(#pname line)),
                            ("plen",Int.toString(#plen line))]
+              val (pct_s,pm_s) = if enabled_latex flags then ("\\%", "\\pm ") else ("%"," ±")
               val cols1 = List.map (fn d =>
                                        let val rs = List.map (select d) runs
                                        in case rs of
@@ -251,11 +263,14 @@ local fun getLines (json_str:string) : line list =
                                                            in (avg,sd,"","sd",4)
                                                            end
                                                       else let val {avg,rsd} = average_rsd rs
-                                                           in (avg,rsd,"%","rsd",1)
+                                                           in (avg,rsd,pct_s,"rsd",0)
                                                            end
                                               in if enabled_rsd flags then
                                                    [(d,pp d avg),(d ^ " " ^ h, real_to_string i rsd)]
-                                                 else [(d,pp d avg ^ " ±" ^ real_to_string i rsd ^ pct)]
+                                                 else if enabled_no_mem_dev flags andalso not (is_time_col d) then
+                                                   [(d,pp d avg)]
+                                                 else
+                                                   [(d,pp d avg ^ pm_s ^ real_to_string i rsd ^ pct)]
                                               end
                                        end) data
           in cols0 @ List.concat cols1
@@ -299,6 +314,7 @@ local fun getLines (json_str:string) : line list =
           case cn of
               "MLKIT [-gengc]" => "rG"
             | "MLKIT" => "rg"
+            | "MLKIT [-disable_spurious_type_variables -scratch]" => "rg-"
             | "MLKIT [-no_gc]" => "r"
             | "MLKIT [-no_ri]" => "g"
             | "MLKIT [-no_ri -gengc]" => "G"
@@ -310,6 +326,8 @@ local fun getLines (json_str:string) : line list =
             | _ =>
               if String.isPrefix "MPL" cn
               then "mpl"
+              else if String.isPrefix "MLKIT" cn andalso String.isSubstring "-argo" cn
+              then "argo"
               else cn
 
       fun expands r cn nil = nil
@@ -376,7 +394,8 @@ fun main (progname, args) =
             ; print "  -sd             : Report non-relative stddev.\n"
             ; print "  -M              : Report memusage in Mb without extension.\n"
             ; print "  -N              : Report counts without decimal places.\n"
-            ; print "  -latex          : Output LaTeX.\n"
+            ; print "  -latex          : LaTeX output.\n"
+            ; print "  -gnuplot        : Gnuplot output.\n"
             ; print "  -merge_rows c   : Merge rows with same pname and different c's.\n"
             ; print "  -shortnames,-sn : Try to shorten program names.\n"
 	    ; print "\n"
