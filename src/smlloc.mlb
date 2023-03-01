@@ -1,7 +1,7 @@
 
 local
   $(SML_LIB)/basis/basis.mlb
-  FileUtil.mlb
+  fileutil.mlb
 in
   smlloc.sml
 end

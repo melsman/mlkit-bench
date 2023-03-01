@@ -62,9 +62,9 @@ fun invCumNormDist p =
 
 val gcs : S.gcs =
     (CommandLineArgs.parseInt "P" 50,
-     CommandLineArgs.parseInt "G" 10000)
+     CommandLineArgs.parseInt "G" 500000)
 
-val N = CommandLineArgs.parseInt "N" 1000000
+val N = CommandLineArgs.parseInt "N" 10000000
 
 fun conv x =  (* real(Word64.toLargeInt(Word32.toLarge x)) / Sobol.norm *)
     let val x' = Word32.>>(x,0w2)
@@ -121,7 +121,7 @@ val () = Timing.run "Computing option price"
                     (fn {endtiming} =>
                         let val p = priceOption()
                             val () = endtiming()
-                        in ppr p = "5.446209009155"
+                        in ppr p = "5.446248734634"
                         end)
 (*
   val expected = 5.437419207

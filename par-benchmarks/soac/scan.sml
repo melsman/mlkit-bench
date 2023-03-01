@@ -5,7 +5,7 @@ val gcs : S.gcs =
     (CommandLineArgs.parseInt "P" 50,
      CommandLineArgs.parseInt "G" 100000)
 
-val N = CommandLineArgs.parseInt "N" 50000000
+val N = CommandLineArgs.parseInt "N" 100000000
 
 fun scanarr () =
     let val a0 = S.map Int64.fromInt (S.iota N)
