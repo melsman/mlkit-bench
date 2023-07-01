@@ -2,6 +2,9 @@ MLTON?=mlton
 FLAGS?=
 MLKIT?=SML_LIB=~/gits/mlkit ~/gits/mlkit/bin/mlkit $(FLAGS)
 
+.PHONY: all
+all: vpmsort2-par.exe vpmsort-par.exe
+
 %-par.exe: %.mlb %.sml ../util/soac.sml
 	MLCOMP=mlkit-par $(MLKIT) -par -no_gc -o $@ $<
 
