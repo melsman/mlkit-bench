@@ -1,0 +1,8 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+in real64_blocks0.mlb
+   THREAD.sig
+   ThreadSeq.sml
+   FORK_JOIN.sig
+   ForkJoinSeq.sml
+end

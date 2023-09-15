@@ -20,6 +20,9 @@ all: pmsort-par.exe pmsort-par0.exe pmsort-seq.exe pmsort-mlton.exe
 %-mlton.exe: %.mlb %.sml ../util/soac.sml
 	$(MLTON) -mlb-path-var 'MLCOMP mlton' -output $@ $<
 
+pmsort2-par.exe: pmsort2.mlb pmsort2.sml ../util/soac.sml
+	MLCOMP=mlkit-par $(MLKIT) -Pcee -par -no_gc -o $@ $<
+
 .PHONY: clean
 clean:
 	rm -rf MLB ../util/MLB *.exe *.exe.out.* *~

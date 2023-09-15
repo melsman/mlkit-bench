@@ -1,0 +1,8 @@
+local
+  $(SML_LIB)/basis/basis-reml.mlb
+  ../util/CommandLineArgs.sml
+  ../util/Timing.sml
+  ../util/$(MLCOMP).mlb
+in
+  mandelbrot.sml
+end

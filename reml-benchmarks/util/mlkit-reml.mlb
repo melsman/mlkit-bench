@@ -1,0 +1,3 @@
+$(SML_LIB)/basis/real64_blocks-reml.mlb
+$(SML_LIB)/basis/par-reml.mlb
+$(SML_LIB)/basis/basis-reml.mlb

@@ -1,0 +1,18 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../util/CommandLineArgs.sml
+  ../util/Timing.sml
+  ../util/$(MLCOMP).mlb
+  ../util/SeqBasis.sml
+  ../util/Seq.sml
+in
+  Util.sml
+  Color.sml
+  Parse.sml
+  Tokenize.sml
+  ReadFile.sml
+  PPM.sml
+  VerticalSeamIndexMap.sml
+  SCI.sml
+  seam-carve.sml
+end

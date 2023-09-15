@@ -1,0 +1,9 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../util/CommandLineArgs.sml
+  ../util/BinarySearch.sml
+  ../util/Timing.sml
+  ../util/$(MLCOMP).mlb
+in
+  vpmsort2.sml
+end

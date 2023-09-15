@@ -1,9 +1,12 @@
 MLTON?=mlton
-FLAGS?=-Pcee
+FLAGS?=
 MLKIT?=SML_LIB=~/gits/mlkit ~/gits/mlkit/bin/mlkit $(FLAGS)
 
 .PHONY: all
-all: vpmsort2-par.exe vpmsort-par.exe slmsort-par.exe
+all: pmsort-par.exe pmsort-par0.exe pmsort-seq.exe pmsort-mlton.exe
+
+%-reml.exe: %.mlb %.sml
+	MLCOMP=mlkit-reml $(MLKIT) -er -par -no_gc -mlb-subdir REML -o $@ $<
 
 %-par.exe: %.mlb %.sml ../util/soac.sml
 	MLCOMP=mlkit-par $(MLKIT) -par -no_gc -o $@ $<
@@ -19,6 +22,9 @@ all: vpmsort2-par.exe vpmsort-par.exe slmsort-par.exe
 
 %-mlton.exe: %.mlb %.sml ../util/soac.sml
 	$(MLTON) -mlb-path-var 'MLCOMP mlton' -output $@ $<
+
+pmsort2-par.exe: pmsort2.mlb pmsort2.sml ../util/soac.sml
+	MLCOMP=mlkit-par $(MLKIT) -Pcee -par -no_gc -o $@ $<
 
 .PHONY: clean
 clean:

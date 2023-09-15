@@ -1,0 +1,3 @@
+Benchmark: Computing pi
+Evaluation: OK
+-f not passed, so not writing image to file.

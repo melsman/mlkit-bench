@@ -1,0 +1,8 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  ../util/CommandLineArgs.sml
+  ../util/Timing.sml
+  ../util/$(MLCOMP).mlb
+in
+  fib.sml
+end
