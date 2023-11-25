@@ -9,7 +9,7 @@ MLKIT_BENCH=../src/mlkit-bench
 
 MLKIT_VERSION=$(shell $(MLKIT_ROOT)/bin/mlkit --version | sed -n 's/.*\([mv][0-9\.a-z-]*\).*/\1/p')
 TODAY=$(shell date "+%Y-%m-%d")
-MACHINE_TAG ?= MacBookPro2016
+MACHINE_TAG ?= MacBookPro2023
 
 
 .PHONY: all
@@ -17,9 +17,9 @@ all: report.json
 	cp $< report_$(MLKIT_VERSION)_$(MACHINE_TAG)_$(TODAY).json
 
 report.json:
-#	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit -mlkit:-no_gc: -mlton $(BENCHFILES)
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit -mlkit:-no_gc: -mlton $(BENCHFILES)
 #	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit:-no_ri: -mlkit -mlkit:-gengc: -mlkit:-no_ri -gengc: -mlkit:-no_gc: -mlton $(BENCHFILES)
-	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit -mlkit:-disable_spurious_type_variables -scratch: -mlkit:-no_gc: -mlton $(BENCHFILES_SORTED)
+#	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit -mlkit:-disable_spurious_type_variables -scratch: -mlkit:-no_gc: -mlton $(BENCHFILES_SORTED)
 
 .PHONY: clean
 clean:

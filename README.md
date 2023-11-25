@@ -1,8 +1,8 @@
 # mlkit-bench
 
-This repository provides a number of tools and benchmark programs for
-the purpose of benchmarking [MLKit](https://github/melsman/mlkit)
-executables across versions (and configurations) and against
+This repository provides tools and benchmark programs for the purpose
+of benchmarking [MLKit](https://github/melsman/mlkit) executables
+across versions (and configurations) and against
 [MLton](http://mlton.org)-generated executables.
 
 Here is an overview of the tools in this repository:
