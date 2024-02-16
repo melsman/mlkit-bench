@@ -60,15 +60,17 @@ fun process (compile: string -> string option * Time.time) (p:string)
     : string * Time.time * measurement list =
     case compile p of
         (SOME t,ctime) =>
-	let val smlnjprefix = "/usr/local/smlnj/bin/sml @SMLload="
+	let val smlnj = "sml @SMLload="
             val binary =
-                if String.isPrefix smlnjprefix t then
-                  String.extract(t,size smlnjprefix,NONE)
+                if String.isSubstring smlnj t then
+                  (case String.tokens (fn x => x = #"=") t of
+                       [_,after] => after
+                     | _ => raise Fail "process: more than one '='")
                 else t
             fun mkout i =
                 binary ^ ".out." ^ Int.toString i
             val out = mkout 1  (* memo: we could check every invocation *)
-            val cmd = if String.isPrefix smlnjprefix t then t
+            val cmd = if String.isSubstring smlnj t then t
                       else "./" ^ t
             val the_exec_n =
                 if !internal_timings then exec_n'
