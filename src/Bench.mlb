@@ -8,6 +8,7 @@ local
   CompileMLKIT.sml
   CompileMLTON.sml
   CompileMPL.sml
+  CompileSMLNJ.sml
 in
   Bench.sml
 end

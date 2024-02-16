@@ -125,7 +125,9 @@ type dir = vec3
 type colour = vec3
 
 val black : vec3 = {x=0.0, y=0.0, z=0.0}
-val white : vec3 = {x=1.0, y=1.0, z=1.0}
+val white : vec3 = {x=0.9, y=0.9, z=0.9}
+val red : vec3 = {x=0.8, y=0.0, z=0.0}
+val cyan : vec3 = {x=0.0, y=0.8, z=0.8}
 
 type ray = {origin: pos, dir: dir}
 
@@ -416,14 +418,25 @@ val irreg : scene =
        , camFov = 75.0 }
     end
 
-val height = CommandLineArgs.parseInt "m" 200
-val width = CommandLineArgs.parseInt "n" 200
+val two : scene =
+    let val sp1 = {pos={x= ~10.0, y= ~50.0, z= ~20.0},colour=red,radius=25.0}
+        val sp2 = {pos={x=30.0, y=50.0, z= ~30.0},colour=white,radius=20.0}
+        val sp3 = {pos={x= ~30.0, y=50.0, z= ~30.0},colour=cyan,radius=30.0}
+    in { spheres = [sp1,sp2,sp3]
+       , camLookFrom = {x=0.0, y=12.0, z=70.0}
+       , camLookAt = {x=0.0, y=10.0, z= ~1.0}
+       , camFov = 100.0 }
+    end
+
+val height = CommandLineArgs.parseInt "m" 800
+val width = CommandLineArgs.parseInt "n" 800
 val f = CommandLineArgs.parseString "f" ""
 val dop6 = CommandLineArgs.parseFlag "ppm6"
 val scene_name = CommandLineArgs.parseString "s" "rgbbox"
 val scene = case scene_name of
                 "rgbbox" => rgbbox
               | "irreg" => irreg
+              | "two" => two
               | s => raise Fail ("No such scene: " ^ s)
 
 val _ = print ("Using scene '" ^ scene_name ^ "' (-s to switch).\n")
@@ -432,7 +445,7 @@ val t0 = Time.now ()
 val (objs, cam) = from_scene width height scene
 val t1 = Time.now ()
 
-val timing = false
+val timing = true
 val () = if timing
          then print ("Scene BVH construction in " ^ Time.fmt 4 (Time.- (t1, t0)) ^ "s.\n")
          else print "Scene BVH construction done.\n"

@@ -9,6 +9,10 @@ ray-mlkit.exe:
 #	$(MLKIT) --statistics_after_optimisation --comments_in_x64_asmcode --no_delete_target_files --maximum_inline_size 1000 -output $@ ray-mlkit.mlb
 	$(MLKIT) --no_delete_target_files --maximum_inline_size 1000 -output $@ ray-mlkit.mlb
 
+ray.exe:
+#	$(MLKIT) --statistics_after_optimisation --comments_in_x64_asmcode --no_delete_target_files --maximum_inline_size 1000 -output $@ ray-mlkit.mlb
+	$(MLKIT) --no_delete_target_files --maximum_inline_size 1000 -output $@ ray.mlb
+
 ray-mlton.exe:
 	mlton -keep g -output $@ ray.mlb
 
@@ -20,4 +24,4 @@ output-%.ppm: ray-%.exe
 
 .PHONY: clean
 clean:
-	rm -rf *~ MLB ray-*.exe run output-*.ppm output-*.png *.s *.c
+	rm -rf *~ MLB ray-*.exe run output-*.ppm output-*.png *.s *.c ray.exe

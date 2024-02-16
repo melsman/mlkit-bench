@@ -314,15 +314,20 @@ local fun getLines (json_str:string) : line list =
           case cn of
               "MLKIT [-gengc]" => "rG"
             | "MLKIT" => "rg"
+            | "MLKIT [-cr]" => "rg-cr"
             | "MLKIT [-disable_spurious_type_variables -scratch]" => "rg-"
             | "MLKIT [-no_gc]" => "r"
             | "MLKIT [-no_ri]" => "g"
             | "MLKIT [-no_ri -gengc]" => "G"
             | "MLTON" => "mlton"
+            | "SMLNJ" => "smlnj"
             | "MLTON [-mlb-path-var 'MLCOMP mlton']" => "mlton"
             | "MLKIT [MLCOMP=mlkit-seq -no_gc]" => "seq"
             | "MLKIT [MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1]" => "par1"
             | "MLKIT [MLCOMP=mlkit-par -no_gc -par]" => "par"
+            | "MLKIT [-no_gc -no_high_pointer_tagging -mlb-subdir C1]" => "r-nhpt"
+            | "MLKIT [-no_high_pointer_tagging -mlb-subdir C1]" => "rg-nhpt"
+            | "MLKIT [-no_high_pointer_tagging -mlb-subdir C1 -cr]" => "rg-nhpt-cr"
             | _ =>
               if String.isPrefix "MPL" cn
               then "mpl"

@@ -1,7 +1,7 @@
 
 structure Bench = struct
 
-datatype compiler = MLKIT of string | MLTON of string | MPL of string
+datatype compiler = MLKIT of string | MLTON of string | MPL of string | SMLNJ of string
 fun pr_compiler (c:compiler): string =
     let fun with_flags "" s = s
 	  | with_flags flags s = s ^ " [" ^ flags ^ "]"
@@ -9,8 +9,8 @@ fun pr_compiler (c:compiler): string =
            MLKIT flags => with_flags flags "MLKIT"
          | MLTON flags => with_flags flags "MLTON"
          | MPL flags => with_flags flags "MPL"
+         | SMLNJ flags => with_flags flags "SMLNJ"
     end
-
 
 type measurement = MemTime.measurement
 
@@ -33,7 +33,7 @@ fun exec_n n {out_file,cmd} =
         val args =
             if String.isSubstring "mlkit" cmd andalso
                not(String.isSubstring "-no_gc" cmd)
-            then ["-report_gc"]
+            then ["-report_gc", "-heap_to_live_ratio 5"]
             else []
         val () = print ("Executing: " ^ cmd ^ " " ^ String.concatWith " " args ^ " - ")
         val R = List.map (fn i =>
@@ -60,14 +60,23 @@ fun process (compile: string -> string option * Time.time) (p:string)
     : string * Time.time * measurement list =
     case compile p of
         (SOME t,ctime) =>
-	let val out = t ^ ".out.1"  (* memo: we could check every invocation *)
-            val cmd = "./" ^ t
+	let val smlnjprefix = "/usr/local/smlnj/bin/sml @SMLload="
+            val binary =
+                if String.isPrefix smlnjprefix t then
+                  String.extract(t,size smlnjprefix,NONE)
+                else t
+            fun mkout i =
+                binary ^ ".out." ^ Int.toString i
+            val out = mkout 1  (* memo: we could check every invocation *)
+            val cmd = if String.isPrefix smlnjprefix t then t
+                      else "./" ^ t
             val the_exec_n =
                 if !internal_timings then exec_n'
                 else exec_n
-	    val res = (t, ctime,
+	    val res = (binary,
+                       ctime,
                        the_exec_n (!repetitions)
-                                  {out_file=fn i => t ^ ".out." ^ Int.toString i,
+                                  {out_file=fn i => mkout i,
                                    cmd=cmd})
 	              handle Fail s => raise Fail ("Failure executing command '" ^ cmd ^ "': " ^ s)
                            | X => raise Fail ("Failure executing command '" ^ cmd ^ "': " ^ General.exnMessage X)
@@ -92,35 +101,32 @@ fun readFlags ss =
 
 fun getCompileArgs (nil, comps, out) = NONE
   | getCompileArgs (s::ss , comps, out) =
-    case s of
-        "-mlkit"   =>
-        (case readFlags ss of
-             SOME (flags,ss) => getCompileArgs (ss, MLKIT flags::comps, out)
-	   | NONE => getCompileArgs (ss, MLKIT "" ::comps, out))
-      | "-mlton"   =>
-	(case readFlags ss of
-             SOME (flags,ss) => getCompileArgs (ss, MLTON flags::comps, out)
-	   | NONE => getCompileArgs (ss, MLTON "" :: comps, out))
-      | "-mpl"   =>
-	(case readFlags ss of
-             SOME (flags,ss) => getCompileArgs (ss, MPL flags::comps, out)
-	   | NONE => getCompileArgs (ss, MPL "" :: comps, out))
-      | "-o" =>
-	(case ss of
-             f::ss => getCompileArgs (ss, comps, SOME f)
-	   | _ => NONE)
-      | "-r" =>
-        (case ss of
-             s::ss =>
-             (case Int.fromString s of
-                  SOME n =>
-                  if n > 0 then ( repetitions := n
+    let fun read_flags C =
+            case readFlags ss of
+                SOME (flags,ss) => getCompileArgs (ss, C flags::comps, out)
+	      | NONE => getCompileArgs (ss, C "" ::comps, out)
+    in case s of
+           "-mlkit" => read_flags MLKIT
+         | "-mlton" => read_flags MLTON
+         | "-mpl" => read_flags MPL
+         | "-smlnj" => read_flags SMLNJ
+         | "-o" =>
+	   (case ss of
+                f::ss => getCompileArgs (ss, comps, SOME f)
+	      | _ => NONE)
+         | "-r" =>
+           (case ss of
+                s::ss =>
+                (case Int.fromString s of
+                     SOME n =>
+                     if n > 0 then ( repetitions := n
                                 ; getCompileArgs (ss, comps, out))
-                  else NONE
-                | NONE => NONE)
-           | _ => NONE)
-      | "-it" => ( internal_timings := true; getCompileArgs (ss,comps,out) )
-      | _ => SOME (s::ss, rev comps, out)
+                     else NONE
+                   | NONE => NONE)
+              | _ => NONE)
+         | "-it" => ( internal_timings := true; getCompileArgs (ss,comps,out) )
+         | _ => SOME (s::ss, rev comps, out)
+    end
 
 fun splitFlags (flags:string) : {env:(string*string)list,flags:string} =
     let val ss = String.tokens (fn #" " => true | _ => false) flags
@@ -143,6 +149,8 @@ fun getNameComp c =
                            flags=flags, cversion=CompileMLTON.version()}
 	 | MPL flags => {head=head, compile=CompileMPL.compile,
                          flags=flags, cversion=CompileMPL.version()}
+	 | SMLNJ flags => {head=head, compile=CompileSMLNJ.compile,
+                           flags=flags, cversion=CompileSMLNJ.version()}
     end
 
 fun sourceFiles nil = nil
@@ -217,9 +225,10 @@ fun process_progs ps c : line list =
         val {env,flags} = splitFlags flags
 	val _ = print ("[Processing benchmark programs for " ^ head ^ "]\n")
         fun process_prog p : line =
-            let val (outfile, ctime, runs) =
+            let val (binfile, ctime, runs) =
                     process (fn s => timewrap compile {env=env,flags=flags,src=s}) p
-                val binsz = Posix.FileSys.ST.size (Posix.FileSys.stat outfile)
+                val () = print ("Finding size of " ^ binfile ^ "\n")
+                val binsz = Posix.FileSys.ST.size (Posix.FileSys.stat binfile)
                             div 1000 handle _ => ~1  (* ST.size returns number in bytes *)
             in {cname=head,
                 cversion=cversion,
@@ -280,6 +289,7 @@ fun main (progname, args) =
 	    ; print "  -mlton[:FLAG ... FLAG:]  Run MLTON on each test.\n"
 	    ; print "  -mpl[:FLAG ... FLAG:]    Run MPL on each test.\n"
 	    ; print "  -mlkit[:FLAG ... FLAG:]  Run MLKIT on each test.\n"
+	    ; print "  -smlnj[:FLAG ... FLAG:]  Run SMLNJ on each test.\n"
 	    ; print "  -o file                  Write json output to `file`.\n"
             ; print "  -r n                     Set number of repetitions to n.\n"
             ; print "  -it                      Use internal timings. Assumes\n"

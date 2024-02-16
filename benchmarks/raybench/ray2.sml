@@ -163,6 +163,8 @@ type colour = vec3
 
 val black : vec3 = V.mk{x=0.0, y=0.0, z=0.0}
 val white : vec3 = V.mk{x=1.0, y=1.0, z=1.0}
+val red : vec3 = V.mk{x=1.0, y=0.0, z=0.0}
+val cyan : vec3 = V.mk{x=0.0, y=0.8, z=0.8}
 
 type ray = {origin: pos, dir: dir}
 
@@ -472,6 +474,16 @@ val irreg : scene =
        , camFov = 75.0 }
     end
 
+val two : scene =
+    let val sp1 = sphere_pack{pos=V.mk{x= ~10.0,y= ~50.0,z= ~20.0},colour=red,radius=25.0}
+        val sp2 = sphere_pack{pos=V.mk{x=30.0,y=50.0,z= ~30.0},colour=white,radius=20.0}
+        val sp3 = sphere_pack{pos=V.mk{x= ~30.0,y=50.0,z= ~30.0},colour=cyan,radius=30.0}
+    in { spheres = [sp1,sp2,sp3]
+       , camLookFrom = V.mk{x=0.0, y=12.0, z=70.0}
+       , camLookAt = V.mk{x=0.0, y=10.0, z= ~1.0}
+       , camFov = 100.0 }
+    end
+
 val height = CommandLineArgs.parseInt "m" 200
 val width = CommandLineArgs.parseInt "n" 200
 val f = CommandLineArgs.parseString "f" ""
@@ -480,6 +492,7 @@ val scene_name = CommandLineArgs.parseString "s" "rgbbox"
 val scene = case scene_name of
                 "rgbbox" => rgbbox
               | "irreg" => irreg
+              | "two" => two
               | s => raise Fail ("No such scene: " ^ s)
 
 val _ = print ("Using scene '" ^ scene_name ^ "' (-s to switch).\n")
