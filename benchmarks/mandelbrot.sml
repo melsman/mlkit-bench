@@ -1,6 +1,6 @@
 (* mandelbrot.sml *)
 
-structure Main =
+structure Main : sig val testit : int -> unit end =
   struct
 
     val x_base = ~2.0

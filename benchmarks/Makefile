@@ -192,8 +192,10 @@ version:
 	@echo $(TODAY)
 	@echo $(BENCHFILES_SORTED)
 
+REPORT ?= report.json
+
 .PHONY: press
-press: report.json
+press:
 	@../src/press/mlkit-bench-press -sn -d real -d rss -skip1 \
            -merge_rows cname \
            -c pname \
@@ -201,4 +203,4 @@ press: report.json
            -c 'real # rg' \
            -c 'real # r' \
            -c 'real # mlton' \
-           $<
+           $(REPORT)

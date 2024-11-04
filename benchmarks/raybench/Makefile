@@ -1,5 +1,5 @@
 
-MLKIT=SML_LIB=~/gits/mlkit ~/gits/mlkit/bin/mlkit
+MLKIT ?= SML_LIB=~/gits/mlkit ~/gits/mlkit/bin/mlkit
 
 .PHONY: all
 #all: output-mlkit.png output-mlton.png

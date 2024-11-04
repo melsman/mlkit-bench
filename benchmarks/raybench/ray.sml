@@ -428,8 +428,8 @@ val two : scene =
        , camFov = 100.0 }
     end
 
-val height = CommandLineArgs.parseInt "m" 800
-val width = CommandLineArgs.parseInt "n" 800
+val height = CommandLineArgs.parseInt "m" 400
+val width = CommandLineArgs.parseInt "n" 400
 val f = CommandLineArgs.parseString "f" ""
 val dop6 = CommandLineArgs.parseFlag "ppm6"
 val scene_name = CommandLineArgs.parseString "s" "rgbbox"
@@ -445,7 +445,7 @@ val t0 = Time.now ()
 val (objs, cam) = from_scene width height scene
 val t1 = Time.now ()
 
-val timing = true
+val timing = false
 val () = if timing
          then print ("Scene BVH construction in " ^ Time.fmt 4 (Time.- (t1, t0)) ^ "s.\n")
          else print "Scene BVH construction done.\n"

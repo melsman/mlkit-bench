@@ -484,8 +484,8 @@ val two : scene =
        , camFov = 100.0 }
     end
 
-val height = CommandLineArgs.parseInt "m" 200
-val width = CommandLineArgs.parseInt "n" 200
+val height = CommandLineArgs.parseInt "m" 800
+val width = CommandLineArgs.parseInt "n" 800
 val f = CommandLineArgs.parseString "f" ""
 val dop6 = CommandLineArgs.parseFlag "ppm6"
 val scene_name = CommandLineArgs.parseString "s" "rgbbox"
