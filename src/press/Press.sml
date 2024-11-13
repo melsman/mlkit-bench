@@ -155,12 +155,12 @@ local fun getLines (json_str:string) : line list =
       fun max (a,b) = if a > b then a else b
 
       fun mysize s =
-          if String.isSubstring "±" s then size s - 1
-          else size s
+          (*if String.isSubstring "±" s then size s - 1
+          else*) size s
 
       fun mypadRight c m v =
-          if String.isSubstring "±" v then StringCvt.padRight c (m+1) v
-          else StringCvt.padRight c m v
+          (*if String.isSubstring "±" v then StringCvt.padRight c (m+1) v
+          else*) StringCvt.padRight c m v
 
       fun pad (col_values:(string*string) list) : (string*string) list =
           let val m = List.foldl max 0 (List.map (mysize o #2) col_values)
@@ -251,7 +251,7 @@ local fun getLines (json_str:string) : line list =
               val data = rev(#data flags)
               val cols0 = [("cname",#cname line), ("cversion",#cversion line), ("pname",pp_pname flags(#pname line)),
                            ("plen",Int.toString(#plen line))]
-              val (pct_s,pm_s) = if enabled_latex flags then ("\\%", "\\pm ") else ("%"," ±")
+              val (pct_s,pm_s) = if enabled_latex flags then ("\\%", "\\pm ") else ("%"," +-")
               val cols1 = List.map (fn d =>
                                        let val rs = List.map (select d) runs
                                        in case rs of

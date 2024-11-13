@@ -2,6 +2,7 @@ MLCOMP ?= mlkit
 
 .PHONY: all
 all: mlkit-bench smlloc
+	$(MAKE) -C press all
 
 mlkit-bench: Bench.mlb Makefile *.sml
 	$(MLCOMP) -output $@ $<

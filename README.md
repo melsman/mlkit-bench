@@ -26,6 +26,22 @@ __Notice:__ A useful setup is to have the MLKit sources checked-out at a sister-
     ~/gits/mlkit-bench/
     ~/gits/mlkit/
 
+## Requirements
+
+1. An SML compiler (MLton or MLKit) for compiling the tools.
+
+2. SmlPkg (see https://github.com/diku-dk/smlpkg) for installing libraries.
+
+3. MLton (see http://mlton.org/) if you want to compare performance of MLKit
+   against executables generated with MLton.
+
+## Compilation of tools
+
+Assuming `smlpkg` and `mlkit` is installed, just execute `make clean all` in the
+repository top-level directory. You may execute `make clean all MLCOMP=mlton` if
+you want the tools to be compiled with MLton.
+
+
 ## Benchmark programs
 
 Currently, there are two sets of benchmarks:
@@ -38,3 +54,48 @@ Currently, there are two sets of benchmarks:
    the parallel threading possibilities of MLKit, which features a
    fork-join model for parallism combined with region-based memory
    management.
+
+### Executing the sequential benchmarks
+
+Just do as follows (after compiling the tools; see above):
+
+```
+$ cd benchmarks
+$ make clean all
+...
+$ make press
+```
+
+You should see a table like the following:
+
+```
+ | pname      | plen | real # rg | real # r  | real # mlton |
+ | DLX        | 2841 | 0.08 +-5% | 0.12 +-0% | 0.18 +-0%    |
+ | badlife    | 216  | 0.66 +-3% | 0.60 +-2% | 0.28 +-1%    |
+ | barnes-hut | 1245 | 0.21 +-2% | 0.21 +-3% | 0.10 +-3%    |
+ | fft        | 71   | 0.29 +-2% | 0.25 +-1% | 0.13 +-4%    |
+ | fib37      | 7    | 0.30 +-4% | 0.15 +-0% | 0.35 +-23%   |
+ | kbc        | 679  | 0.13 +-4% | 0.11 +-3% | 0.05 +-0%    |
+ | lexgen     | 1322 | 0.41 +-9% | 0.34 +-5% | 0.22 +-2%    |
+ | life       | 202  | 0.26 +-0% | 0.26 +-1% | 0.26 +-1%    |
+ | logic      | 351  | 0.17 +-3% | 0.17 +-0% | 0.08 +-0%    |
+ | mandelbrot | 62   | 0.26 +-3% | 0.41 +-2% | 0.27 +-2%    |
+ | mlyacc     | 7385 | 0.17 +-0% | 0.17 +-3% | 0.18 +-0%    |
+ | mpuz       | 124  | 0.33 +-3% | 0.25 +-0% | 0.16 +-0%    |
+ | msort-rf   | 119  | 0.36 +-1% | 0.32 +-1% | 0.56 +-1%    |
+ | msort      | 113  | 0.38 +-1% | 0.34 +-1% | 0.56 +-2%    |
+ | nucleic    | 3215 | 0.16 +-0% | 0.18 +-2% | 0.12 +-4%    |
+ | professor  | 282  | 0.22 +-3% | 0.20 +-2% | 0.22 +-0%    |
+ | ratio      | 620  | 0.72 +-1% | 0.65 +-0% | 0.24 +-3%    |
+ | ray        | 533  | 8.13 +-0% | 7.32 +-1% | 2.28 +-1%    |
+ | simple     | 1053 | 0.09 +-0% | 0.08 +-6% | 0.12 +-0%    |
+ | tak        | 12   | 0.63 +-1% | 0.34 +-0% | 0.83 +-14%   |
+ | tsp        | 493  | 0.08 +-0% | 0.07 +-0% | 0.11 +-0%    |
+ | tsp_tp     | 493  | 0.14 +-0% | 0.13 +-0% | 0.21 +-0%    |
+ | vliw       | 3681 | 0.37 +-1% | 0.33 +-0% | 0.17 +-0%    |
+ | zebra      | 313  | 0.63 +-1% | 0.50 +-1% | 0.18 +-0%    |
+ | zern       | 605  | 0.33 +-1% | 0.26 +-6% | 0.21 +-3%    |
+```
+
+See the `Makefile` for how arguments specify the behavior of
+`mlkit-bench-press`...

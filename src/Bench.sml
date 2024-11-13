@@ -239,7 +239,7 @@ fun process_progs ps c : line list =
                 pname=p,
                 plen=FileUtil.linesOfFile p,
                 ctime=Time.toReal ctime,
-                binsz=binsz,
+                binsz=Position.toInt binsz handle _ => ~1,
                 runs=runs,
                 err=""} : line
             end
