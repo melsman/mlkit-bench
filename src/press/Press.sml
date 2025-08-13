@@ -8,7 +8,8 @@ fun warn s = println ("Warning: " ^ s)
 type measurement = DataType.measurement
 type line = DataType.line
 
-type flags = {data:string list,         (* name of measurement data entry *)
+type flags = {skip:int,                 (* number of worst runs to skip (according to 'real' measure) *)
+              data:string list,         (* name of measurement data entry *)
               cname:string list,        (* compiler name *)
               cversion:string list,     (* compiler version *)
               pname:string list,        (* program name *)
@@ -18,26 +19,30 @@ type flags = {data:string list,         (* name of measurement data entry *)
               rcns:string list,         (* compiler renames each of the form "old@new" *)
               merge_rows:string option} (* merge rows with different provided column but same pname *)
 
-val flags0 : flags = {data=nil,cname=nil,cversion=nil,pname=nil,prune=nil,columns=nil,bflags=nil,rcns=nil,merge_rows=NONE}
+val flags0 : flags = {skip=0,data=nil,cname=nil,cversion=nil,pname=nil,prune=nil,columns=nil,bflags=nil,rcns=nil,merge_rows=NONE}
 
-fun add_data ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
-    {data=x::data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
-fun add_cname ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=x::cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
-fun add_cversion ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=x::cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
-fun add_pname ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=x::pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
-fun add_prune ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,prune=x::prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
-fun add_column ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=x::columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
-fun add_rcn ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=x::rcns,merge_rows=merge_rows}
+fun add_skip ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {skip=case Int.fromString x of SOME s => s | NONE => die "Flag '-skip' assumes an integer as argument",
+     data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+
+fun add_data ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {skip=skip,data=x::data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_cname ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {skip=skip,data=data,cname=x::cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_cversion ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {skip=skip,data=data,cname=cname,cversion=x::cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_pname ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {skip=skip,data=data,cname=cname,cversion=cversion,pname=x::pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_prune ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {skip=skip,data=data,cname=cname,cversion=cversion,pname=pname,prune=x::prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_column ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {skip=skip,data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=x::columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_rcn ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {skip=skip,data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=x::rcns,merge_rows=merge_rows}
 
 local
-  fun enable_bflag f ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) : flags =
-      {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=f::bflags,rcns=rcns,merge_rows=merge_rows}
+  fun enable_bflag f ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) : flags =
+      {skip=skip,data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=f::bflags,rcns=rcns,merge_rows=merge_rows}
   fun enabled_bflag f (fs:flags) : bool =
       List.exists (fn s => f = s) (#bflags fs)
   fun enable_enabled f : (flags -> flags) * (flags -> bool) =
@@ -54,8 +59,8 @@ in
   val (enable_shortnames, enabled_shortnames) = enable_enabled "shortnames" (* try to shorten program names *)
 end
 
-fun add_merge_rows ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string): flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=SOME x}
+fun add_merge_rows ({skip,data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string): flags =
+    {skip=skip,data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=SOME x}
 
 fun sourceFiles nil = nil
   | sourceFiles (input::inputs) =
@@ -80,6 +85,7 @@ fun getCompileArgs (nil, flags:flags) = NONE
          | "-column" => cont add_column ss
          | "-c" => cont add_column ss
          | "-rcn" => cont add_rcn ss
+         | "-skip" => cont add_skip ss
          | "-skip1" => getCompileArgs(ss,enable_skip1 flags)
          | "-rsd" => getCompileArgs(ss,enable_rsd flags)
          | "-sd" => getCompileArgs(ss,enable_sd flags)
@@ -237,10 +243,15 @@ local fun getLines (json_str:string) : line list =
           end
 
       fun process (flags:flags) (line:line) : (string*string) list =
-          let val runs = #runs line
+          let val runs : measurement list = #runs line
               val runs = if enabled_skip1 flags then
-                           (case runs of _ :: rs => rs | _ => runs)
+                           case runs of _ :: rs => rs | _ => die "Failed to skip first run (-skip)"
                          else runs
+              val runs =
+                  let val D : int = #skip flags
+                      val runs = rev(Listsort.sort (fn (a,b) => Real.compare(select "real" a,select "real" b)) runs)
+                  in List.drop(runs,D) handle _ => die ("Failed to drop worst " ^ Int.toString D ^ " runs")
+                  end
               fun is_memory d = List.exists (fn x => x=d) ["rss","size","data","stk","exe"]
               fun is_count d = List.exists (fn x => x=d) ["gcn","majgcn"]
               fun pp d v = if is_memory d then
@@ -411,6 +422,7 @@ fun main (progname, args) =
 	    ; print "  -data s, -d s   : s in {data,exe,real,rss,size,stk,sys,user,gc,majgc,gcn,majgcn}.\n"
             ; print "  -column c,-c c  : Include column c.\n"
             ; print "  -skip1          : Skip the first measument.\n"
+            ; print "  -skip n         : Skip the n worst measuments (according to 'real' measurement).\n"
             ; print "  -rsd            : Separate columns for relative stddev.\n"
             ; print "  -sd             : Report non-relative stddev.\n"
             ; print "  -M              : Report memusage in Mb without extension.\n"
