@@ -1,5 +1,6 @@
 MLKIT_ROOT ?= ~/gits/mlkit
-BENCHFILES=vliw.sml lexgen.sml badlife.sml barnes-hut.mlb DLX.sml fft.sml fib37.sml kbc.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml msort-rf.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml tsp_tp.sml zebra.sml zern.sml
+#BENCHFILES=vliw.sml lexgen.sml badlife.sml barnes-hut.mlb DLX.sml fft.sml fib37.sml kbc.sml life.sml logic.mlb logic2.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml msort-rf.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml tsp_tp.sml zebra.sml zern.sml
+BENCHFILES=vliw.sml lexgen.sml badlife.sml barnes-hut.mlb fft.sml fib37.sml kbc.sml life.sml logic.mlb logic2.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml msort-rf.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml tsp_tp.sml zebra.sml zern.sml
 #BENCHFILES=vliw.sml lexgen.sml
 
 BENCHFILES_SORTED=DLX.sml barnes-hut.mlb fft.sml fib37.sml kbc.sml lexgen.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort-rf.sml msort.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml vliw.sml zebra.sml zern.sml
@@ -17,15 +18,19 @@ all: report.json
 	cp $< report_$(MLKIT_VERSION)_$(MACHINE_TAG)_$(TODAY).json
 
 report.json:
-	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit -mlkit:-no_gc: -mlton $(BENCHFILES)
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 5 -o $@ -mlkit -mlkit:-no_gc: -mlton $(BENCHFILES)
 #	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit:-no_ri: -mlkit -mlkit:-gengc: -mlkit:-no_ri -gengc: -mlkit:-no_gc: -mlton $(BENCHFILES)
 #	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit -mlkit:-disable_spurious_type_variables -scratch: -mlkit:-no_gc: -mlton $(BENCHFILES_SORTED)
+
+report-flattening.json:
+#	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 5 -o $@ -mlkit -mlkit:-no_gc: -mlkit:-no_uncurry -no_unbox_funargs -mlb-subdir x0: -mlkit:-no_uncurry -mlb-subdir x1: -mlkit:-no_unbox_real_funargs -mlb-subdir x2: -mlkit:-no_unbox_funargs -mlb-subdir x3: -mlton $(BENCHFILES)
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 5 -o $@ -mlkit -mlkit:-no_gc: -mlkit:-no_uncurry -no_unbox_funargs -mlb-subdir x0: -mlkit:-no_uncurry -mlb-subdir x1: -mlkit:-no_unbox_real_funargs -mlb-subdir x2: -mlkit:-no_unbox_funargs -mlb-subdir x3: -mlton $(BENCHFILES)
 
 .PHONY: clean
 clean:
 	rm -rf MLB *~ *.exe.out.* *.exe time.out report.json *.auto.mlb
 	rm -rf raybench/MLB raybench/*~ nucleic/MLB nucleic/*~
-	rm -rf mlyacc/MLB mlyacc/*~ logic/MLB logic/*~ barnes-hut/MLB barnes-hut/*~
+	rm -rf mlyacc/MLB mlyacc/*~ logic/MLB logic/*~ logic2/MLB logic2/*~ barnes-hut/MLB barnes-hut/*~
 	rm -rf *.spurious *.spurious.log *.spurious.no.log *.spurious.yes.log
 
 # ------------------------------
@@ -203,4 +208,21 @@ press:
            -c 'real # rg' \
            -c 'real # r' \
            -c 'real # mlton' \
+           -c 'rss # rg' \
+           -c 'rss # r' \
+           -c 'rss # mlton' \
            $(REPORT)
+
+.PHONY: press-flattening
+press-flattening:
+	@../src/press/mlkit-bench-press -sn -d real -d rss -skip1 -merge_rows cname -c pname -c plen \
+          -rcn 'MLKIT [-no_uncurry -no_unbox_funargs -mlb-subdir x0]@rg0' \
+          -rcn 'MLKIT [-no_unbox_funargs -mlb-subdir x3]@rg0uc' \
+          -rcn 'MLKIT [-no_unbox_real_funargs -mlb-subdir x2]@rg0uc_uba' \
+          -c 'real # rg0' \
+          -c 'real # rg0uc' \
+          -c 'real # rg0uc_uba' \
+          -c 'real # rg' \
+          -c 'real # r' \
+          -c 'real # mlton' \
+          report-flattening.json

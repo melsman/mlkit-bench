@@ -15,26 +15,29 @@ type flags = {data:string list,         (* name of measurement data entry *)
               prune:string list,        (* program name to prune / eliminate *)
               columns:string list,      (* columns to include (all if empty) *)
               bflags:string list,       (* enabled boolean flags *)
+              rcns:string list,         (* compiler renames each of the form "old@new" *)
               merge_rows:string option} (* merge rows with different provided column but same pname *)
 
-val flags0 : flags = {data=nil,cname=nil,cversion=nil,pname=nil,prune=nil,columns=nil,bflags=nil,merge_rows=NONE}
+val flags0 : flags = {data=nil,cname=nil,cversion=nil,pname=nil,prune=nil,columns=nil,bflags=nil,rcns=nil,merge_rows=NONE}
 
-fun add_data ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
-    {data=x::data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
-fun add_cname ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=x::cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
-fun add_cversion ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=x::cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
-fun add_pname ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=x::pname,prune=prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
-fun add_prune ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,prune=x::prune,columns=columns,bflags=bflags,merge_rows=merge_rows}
-fun add_column ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string) : flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=x::columns,bflags=bflags,merge_rows=merge_rows}
+fun add_data ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {data=x::data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_cname ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=x::cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_cversion ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=cname,cversion=x::cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_pname ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=cname,cversion=cversion,pname=x::pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_prune ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=cname,cversion=cversion,pname=pname,prune=x::prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_column ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=x::columns,bflags=bflags,rcns=rcns,merge_rows=merge_rows}
+fun add_rcn ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string) : flags =
+    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=x::rcns,merge_rows=merge_rows}
 
 local
-  fun enable_bflag f ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) : flags =
-      {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=f::bflags,merge_rows=merge_rows}
+  fun enable_bflag f ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) : flags =
+      {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=f::bflags,rcns=rcns,merge_rows=merge_rows}
   fun enabled_bflag f (fs:flags) : bool =
       List.exists (fn s => f = s) (#bflags fs)
   fun enable_enabled f : (flags -> flags) * (flags -> bool) =
@@ -51,8 +54,8 @@ in
   val (enable_shortnames, enabled_shortnames) = enable_enabled "shortnames" (* try to shorten program names *)
 end
 
-fun add_merge_rows ({data,cname,cversion,pname,prune,columns,bflags,merge_rows}:flags) (x:string): flags =
-    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,merge_rows=SOME x}
+fun add_merge_rows ({data,cname,cversion,pname,prune,columns,bflags,rcns,merge_rows}:flags) (x:string): flags =
+    {data=data,cname=cname,cversion=cversion,pname=pname,prune=prune,columns=columns,bflags=bflags,rcns=rcns,merge_rows=SOME x}
 
 fun sourceFiles nil = nil
   | sourceFiles (input::inputs) =
@@ -76,6 +79,7 @@ fun getCompileArgs (nil, flags:flags) = NONE
          | "-d" => cont add_data ss
          | "-column" => cont add_column ss
          | "-c" => cont add_column ss
+         | "-rcn" => cont add_rcn ss
          | "-skip1" => getCompileArgs(ss,enable_skip1 flags)
          | "-rsd" => getCompileArgs(ss,enable_rsd flags)
          | "-sd" => getCompileArgs(ss,enable_sd flags)
@@ -310,55 +314,67 @@ local fun getLines (json_str:string) : line list =
           in map collapse tables
           end
 
-      fun pp_cname cn =
-          case cn of
-              "MLKIT [-gengc]" => "rG"
-            | "MLKIT" => "rg"
-            | "MLKIT [-cr]" => "rg-cr"
-            | "MLKIT [-disable_spurious_type_variables -scratch]" => "rg-"
-            | "MLKIT [-no_gc]" => "r"
-            | "MLKIT [-no_ri]" => "g"
-            | "MLKIT [-no_ri -gengc]" => "G"
-            | "MLTON" => "mlton"
-            | "SMLNJ" => "smlnj"
-            | "MLTON [-mlb-path-var 'MLCOMP mlton']" => "mlton"
-            | "MLKIT [MLCOMP=mlkit-seq -no_gc]" => "seq"
-            | "MLKIT [MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1]" => "par1"
-            | "MLKIT [MLCOMP=mlkit-par -no_gc -par]" => "par"
-            | "MLKIT [-no_gc -no_high_pointer_tagging -mlb-subdir C1]" => "r-nhpt"
-            | "MLKIT [-no_high_pointer_tagging -mlb-subdir C1]" => "rg-nhpt"
-            | "MLKIT [-no_high_pointer_tagging -mlb-subdir C1 -cr]" => "rg-nhpt-cr"
-            | _ =>
-              if String.isPrefix "MPL" cn
-              then "mpl"
-              else if String.isPrefix "MLKIT" cn andalso String.isSubstring "-argo" cn
-              then "argo"
-              else cn
+      fun look_rcns s nil = NONE
+        | look_rcns s ((k,v)::kvs) = if s = k then SOME v else look_rcns s kvs
 
-      fun expands r cn nil = nil
-        | expands r cn (k::ks) =
+      fun pp_cname rcns cn =
+          case look_rcns cn rcns of
+              SOME v => v
+            | NONE =>
+              case cn of
+                  "MLKIT [-gengc]" => "rG"
+                | "MLKIT" => "rg"
+                | "MLKIT [-cr]" => "rg-cr"
+                | "MLKIT [-disable_spurious_type_variables -scratch]" => "rg-"
+                | "MLKIT [-no_gc]" => "r"
+                | "MLKIT [-no_ri]" => "g"
+                | "MLKIT [-no_ri -gengc]" => "G"
+                | "MLTON" => "mlton"
+                | "SMLNJ" => "smlnj"
+                | "MLTON [-mlb-path-var 'MLCOMP mlton']" => "mlton"
+                | "MLKIT [MLCOMP=mlkit-seq -no_gc]" => "seq"
+                | "MLKIT [MLCOMP=mlkit-seq -no_gc -par -mlb-subdir C1]" => "par1"
+                | "MLKIT [MLCOMP=mlkit-par -no_gc -par]" => "par"
+                | "MLKIT [-no_gc -no_high_pointer_tagging -mlb-subdir C1]" => "r-nhpt"
+                | "MLKIT [-no_high_pointer_tagging -mlb-subdir C1]" => "rg-nhpt"
+                | "MLKIT [-no_high_pointer_tagging -mlb-subdir C1 -cr]" => "rg-nhpt-cr"
+                | _ =>
+                  if String.isPrefix "MPL" cn
+                  then "mpl"
+                  else if String.isPrefix "MLKIT" cn andalso String.isSubstring "-argo" cn
+                  then "argo"
+                  else cn
+
+      fun expands rcns r cn nil = nil
+        | expands rcns r cn (k::ks) =
           case find k r of
-              SOME v => (k ^ " # " ^ pp_cname cn, v) :: expands r cn ks
-            | NONE => expands r cn ks
+              SOME v => (k ^ " # " ^ pp_cname rcns cn, v) :: expands rcns r cn ks
+            | NONE => expands rcns r cn ks
 
-      fun mergeRows col (table: table) : table =
+      fun mergeRows rcns col (table: table) : table =
           groupToCols "pname" (fn r =>
                                   case find col r of
-                                      SOME cn => expands r cn ["user","user rsd","user sd",
-                                                               "real","real rsd","real sd",
-                                                               "gc","gc rsd","gc sd",
-                                                               "majgc","majgc rsd","majgc sd",
-                                                               "gcn",
-                                                               "majgcn",
-                                                               "rss","rss rsd","rss sd"
-                                                              ]
+                                      SOME cn => expands rcns r cn ["user","user rsd","user sd",
+                                                                    "real","real rsd","real sd",
+                                                                    "gc","gc rsd","gc sd",
+                                                                    "majgc","majgc rsd","majgc sd",
+                                                                    "gcn",
+                                                                    "majgcn",
+                                                                    "rss","rss rsd","rss sd"
+                                                                   ]
                                     | NONE => nil) table
+
+      fun parse_rcn s =
+          case String.tokens (fn c => c = #"@") s of
+              [s1,s2] => (s1,s2)
+            | _ => die "Expects rename-compile-name syntax to be on the form 'old@new'"
 
       fun processAll flags (lines: line list) : unit =
           let val table = List.map (process flags) lines
+              val rcns : (string*string)list = map parse_rcn (#rcns flags)
               val table = case #merge_rows flags of
                               NONE => table
-                            | SOME col => mergeRows col table
+                            | SOME col => mergeRows rcns col table
               val table = (* add header *)
                   case table of
                       row::_ => let val hs = List.map (fn (k,_) => (k,k)) row
@@ -403,6 +419,7 @@ fun main (progname, args) =
             ; print "  -gnuplot        : Gnuplot output.\n"
             ; print "  -merge_rows c   : Merge rows with same pname and different c's.\n"
             ; print "  -shortnames,-sn : Try to shorten program names.\n"
+            ; print "  -rcn old@new    : Rename compiler name.\n"
 	    ; print "\n"
 	    ; print "FILES:\n"
 	    ; print "  file.json    : Json file.\n"
