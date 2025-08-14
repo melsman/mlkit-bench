@@ -25,4 +25,4 @@ structure Main =
 fun repeat n = if n <= 0 then ()
                else (Main.doit(); repeat (n-1))
 
-val () = repeat 5
+val () = repeat 20

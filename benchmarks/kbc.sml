@@ -673,6 +673,9 @@ fun kb_complete  complete_rules (* the terms in the complete_rules are global *)
 
 fun doit() = kb_complete  [] (* terms in list global *) (Geom_rules())
 
+fun repeat n f = if n <= 0 then ()
+                 else (f(); repeat (n-1) f)
+
 in
-  doit(); doit(); doit()
+  repeat 10 doit
 end

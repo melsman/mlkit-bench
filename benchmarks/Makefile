@@ -1,7 +1,6 @@
 MLKIT_ROOT ?= ~/gits/mlkit
 #BENCHFILES=vliw.sml lexgen.sml badlife.sml barnes-hut.mlb DLX.sml fft.sml fib37.sml kbc.sml life.sml logic.mlb logic2.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml msort-rf.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml tsp_tp.sml zebra.sml zern.sml
-BENCHFILES=vliw.sml lexgen.sml badlife.sml barnes-hut.mlb fft.sml fib37.sml kbc.sml life.sml logic.mlb logic2.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml msort-rf.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml tsp_tp.sml zebra.sml zern.sml
-#BENCHFILES=vliw.sml lexgen.sml
+BENCHFILES=vliw.sml lexgen.sml barnes-hut.mlb fft.sml fib37.sml kbc.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml zebra.sml zern.sml
 
 BENCHFILES_SORTED=DLX.sml barnes-hut.mlb fft.sml fib37.sml kbc.sml lexgen.sml life.sml logic.mlb mandelbrot.sml mlyacc.mlb mpuz.sml msort-rf.sml msort.sml nucleic.mlb professor.sml ratio.sml ray.mlb simple.sml tak.sml tsp.sml vliw.sml zebra.sml zern.sml
 #BENCHFILES_SORTED=life.sml
@@ -24,7 +23,7 @@ report.json:
 
 report-flattening.json:
 #	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 5 -o $@ -mlkit -mlkit:-no_gc: -mlkit:-no_uncurry -no_unbox_funargs -mlb-subdir x0: -mlkit:-no_uncurry -mlb-subdir x1: -mlkit:-no_unbox_real_funargs -mlb-subdir x2: -mlkit:-no_unbox_funargs -mlb-subdir x3: -mlton $(BENCHFILES)
-	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 5 -o $@ -mlkit -mlkit:-no_gc: -mlkit:-no_uncurry -no_unbox_funargs -mlb-subdir x0: -mlkit:-no_uncurry -mlb-subdir x1: -mlkit:-no_unbox_real_funargs -mlb-subdir x2: -mlkit:-no_unbox_funargs -mlb-subdir x3: -mlton $(BENCHFILES)
+	MLKIT_ROOT=$(MLKIT_ROOT) $(MLKIT_BENCH) -r 10 -o $@ -mlkit -mlkit:-no_gc: -mlkit:-no_uncurry -no_unbox_funargs -mlb-subdir x0: -mlkit:-no_uncurry -mlb-subdir x1: -mlkit:-no_unbox_real_funargs -mlb-subdir x2: -mlkit:-no_unbox_funargs -mlb-subdir x3: -mlton $(BENCHFILES)
 
 .PHONY: clean
 clean:
@@ -214,7 +213,7 @@ press:
            $(REPORT)
 
 .PHONY: press-flattening
-press-flattening:
+press-flattening: report-flattening.json Makefile
 	@../src/press/mlkit-bench-press -sn -d real -d rss -skip1 -merge_rows cname -c pname -c plen \
           -rcn 'MLKIT [-no_uncurry -no_unbox_funargs -mlb-subdir x0]@rg0' \
           -rcn 'MLKIT [-no_unbox_funargs -mlb-subdir x3]@rg0uc' \
@@ -223,6 +222,5 @@ press-flattening:
           -c 'real # rg0uc' \
           -c 'real # rg0uc_uba' \
           -c 'real # rg' \
-          -c 'real # r' \
           -c 'real # mlton' \
           report-flattening.json
