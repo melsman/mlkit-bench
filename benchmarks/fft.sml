@@ -33,8 +33,8 @@ fun odds [] = []
   | odds _ = impossible "odds"
 
 fun fmul (c,pin,[]) = []
-  | fmul (c,pin,(a::b))
-  =  ~*((Math.cos(c),Math.sin(c)), a) :: fmul (c+pin,pin,b)
+  | fmul (c,pin,a::b) =
+    ~*((Math.cos c,Math.sin c), a) :: fmul (c+pin,pin,b)
 
 fun fft ([(a,b)], 1)  = [(a+0.0,b+0.0)]
   | fft (x, n2)
@@ -56,8 +56,8 @@ in
 end
 
 
-fun mkList(tr as (seed,0,acc)) = tr
-  | mkList(seed,n,acc) = mkList(nextrand seed, n-1, seed::acc)
+fun mkList (tr as (seed,0,acc)) = tr
+  | mkList (seed,n,acc) = mkList(nextrand seed, n-1, seed::acc)
 
 val n = 512 * 512
 
